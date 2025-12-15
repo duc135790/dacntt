@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { productsAPI, cartAPI } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
-import { FaMobileAlt, FaShoppingCart, FaArrowLeft, FaCheckCircle, FaExclamationCircle, FaBox, FaMemory, FaBatteryFull } from 'react-icons/fa';
+import { FaBook, FaShoppingCart, FaArrowLeft, FaCheckCircle, FaExclamationCircle, FaUser, FaBuilding, FaFileAlt } from 'react-icons/fa';
 
 const ProductDetail = () => {
   const { id } = useParams();

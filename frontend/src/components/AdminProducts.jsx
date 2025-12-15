@@ -15,9 +15,9 @@ const AdminProducts = () => {
     stock: '',
     image: '',
     specs: {
-      ram: '',
-      storage: '',
-      battery: '',
+      author: '',
+      publisher: '',
+      pages: '',
     },
   });
 
@@ -73,9 +73,9 @@ const AdminProducts = () => {
         stock: '',
         image: '',
         specs: {
-          ram: '',
-          storage: '',
-          battery: '',
+          author: '',
+          publisher: '',
+          pages: '',
         },
       });
       fetchProducts();
@@ -94,23 +94,23 @@ const AdminProducts = () => {
       stock: product.stock,
       image: product.image || '',
       specs: product.specs || {
-        ram: '',
-        storage: '',
-        battery: '',
+        author: '',
+        publisher: '',
+        pages: '',
       },
     });
     setShowModal(true);
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')) {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa sách này?')) {
       return;
     }
     try {
       await productsAPI.deleteProduct(id);
       fetchProducts();
     } catch (error) {
-      alert(error.response?.data?.message || 'Xóa sản phẩm thất bại');
+      alert(error.response?.data?.message || 'Xóa sách thất bại');
     }
   };
 
@@ -130,7 +130,7 @@ const AdminProducts = () => {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-semibold">Danh sách sản phẩm</h2>
+        <h2 className="text-2xl font-semibold">Danh sách sách</h2>
         <button
           onClick={() => {
             setEditingProduct(null);
@@ -142,29 +142,28 @@ const AdminProducts = () => {
               stock: '',
               image: '',
               specs: {
-                ram: '',
-                storage: '',
-                battery: '',
+                author: '',
+                publisher: '',
+                pages: '',
               },
             });
             setShowModal(true);
           }}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center space-x-2"
+          className="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700 flex items-center space-x-2"
         >
           <FaPlus />
-          <span>Thêm sản phẩm mới</span>
+          <span>Thêm sách mới</span>
         </button>
       </div>
-
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Sản phẩm
+                Sách
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Thương hiệu
+                Danh mục
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                 Giá
@@ -221,7 +220,7 @@ const AdminProducts = () => {
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                   <button
                     onClick={() => handleEdit(product)}
-                    className="text-blue-600 hover:text-blue-900"
+                    className="text-orange-600 hover:text-orange-900"
                   >
                     <FaEdit />
                   </button>
@@ -237,18 +236,16 @@ const AdminProducts = () => {
           </tbody>
         </table>
       </div>
-
-      {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
           <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <h3 className="text-xl font-bold mb-4">
-              {editingProduct ? 'Chỉnh sửa sản phẩm' : 'Thêm sản phẩm mới'}
+              {editingProduct ? 'Chỉnh sửa sách' : 'Thêm sách mới'}
             </h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Tên sản phẩm
+                  Tên sách
                 </label>
                 <input
                   type="text"
@@ -261,7 +258,7 @@ const AdminProducts = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Thương hiệu
+                  Danh mục
                 </label>
                 <select
                   name="brand"
@@ -270,13 +267,13 @@ const AdminProducts = () => {
                   required
                   className="w-full border border-gray-300 rounded-md px-3 py-2"
                 >
-                  <option value="">Chọn thương hiệu</option>
-                  <option value="Apple">Apple</option>
-                  <option value="Samsung">Samsung</option>
-                  <option value="Xiaomi">Xiaomi</option>
-                  <option value="OPPO">OPPO</option>
-                  <option value="Vivo">Vivo</option>
-                  <option value="Realme">Realme</option>
+                  <option value="">Chọn danh mục</option>
+                  <option value="Văn học">Văn học</option>
+                  <option value="Kinh tế">Kinh tế</option>
+                  <option value="Kỹ năng sống">Kỹ năng sống</option>
+                  <option value="Thiếu nhi">Thiếu nhi</option>
+                  <option value="Giáo khoa">Giáo khoa</option>
+                  <option value="Ngoại ngữ">Ngoại ngữ</option>
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -334,45 +331,45 @@ const AdminProducts = () => {
                 />
               </div>
               <div className="border-t pt-4">
-                <h4 className="font-semibold mb-3">Thông số kỹ thuật</h4>
+                <h4 className="font-semibold mb-3">Thông tin chi tiết</h4>
                 <div className="grid grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      RAM
+                      Tác giả
                     </label>
                     <input
                       type="text"
-                      name="specs.ram"
-                      value={formData.specs.ram}
+                      name="specs.author"
+                      value={formData.specs.author}
                       onChange={handleChange}
                       className="w-full border border-gray-300 rounded-md px-3 py-2"
-                      placeholder="VD: 8GB"
+                      placeholder="VD: Nguyễn Nhật Ánh"
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Bộ nhớ
+                      Nhà xuất bản
                     </label>
                     <input
                       type="text"
-                      name="specs.storage"
-                      value={formData.specs.storage}
+                      name="specs.publisher"
+                      value={formData.specs.publisher}
                       onChange={handleChange}
                       className="w-full border border-gray-300 rounded-md px-3 py-2"
-                      placeholder="VD: 256GB"
+                      placeholder="VD: NXB Trẻ"
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Pin
+                      Số trang
                     </label>
                     <input
                       type="text"
-                      name="specs.battery"
-                      value={formData.specs.battery}
+                      name="specs.pages"
+                      value={formData.specs.pages}
                       onChange={handleChange}
                       className="w-full border border-gray-300 rounded-md px-3 py-2"
-                      placeholder="VD: 5000mAh"
+                      placeholder="VD: 300"
                     />
                   </div>
                 </div>
@@ -380,7 +377,7 @@ const AdminProducts = () => {
               <div className="flex space-x-2">
                 <button
                   type="submit"
-                  className="flex-1 bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+                  className="flex-1 bg-orange-600 text-white py-2 rounded hover:bg-orange-700"
                 >
                   {editingProduct ? 'Cập nhật' : 'Thêm'}
                 </button>

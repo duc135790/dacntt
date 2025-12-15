@@ -1,4 +1,4 @@
-import express, { Router } from 'express';
+import express from 'express';
 const router = express.Router();
 import{
     registerCustomer,
@@ -6,28 +6,34 @@ import{
     getCustomerCart,
     addItemToCart,
     removeItemFromCart,
+    getCustomerProfile,
     updateUserProfile,
     updateCartItemQuantity,
 }from '../controllers/customerController.js';
 import { protect } from '../middleware/authMiddleware.js';
+
+console.log('📋 Customer routes loading...');
+
 //cac routes cong khai
-router.post('/',registerCustomer);
-router.post('/login',loginCustomer);
+router.post('/', registerCustomer);
+router.post('/login', loginCustomer);
+
+console.log('  ✅ POST / (register) registered');
+console.log('  ✅ POST /login registered');
+
 //cac routes rieng tu
 router
     .route('/cart')
-    //GET /api/customer/cart
     .get(protect, getCustomerCart)
-    //POST /api/customer/cart
     .post(protect, addItemToCart)
     .put(protect, updateCartItemQuantity);
 
 //route xoa item
-//DELETE /api/customer/cart/:productId
 router.delete('/cart/:productId', protect, removeItemFromCart);
 
 router
     .route('/profile')
-    // .get(protect, getUserProfile)
+    .get(protect, getCustomerProfile)
     .put(protect, updateUserProfile);
+
 export default router;

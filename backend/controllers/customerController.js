@@ -1,16 +1,25 @@
 import Customer from "../models/customerModel.js";
 import generateToken from "../utils/generateToken.js";
 import Product from '../models/productModel.js';
+
 //@desc dang ky khach hang moi
 //@route POST/api/customers
-const registerCustomer = async (req, res)=>{
+const registerCustomer = async (req, res, next)=>{
     const {email, name, phone, password} = req.body;
 
     try{
+        // Validate required fields
+        if (!email || !password) {
+            return res.status(400).json({
+                message: "Vui lòng điền email và mật khẩu"
+            });
+        }
+
         const customerExists = await Customer.findOne({email});
         if(customerExists){
             return res.status(400).json({message : "Email da ton tai"});
         }
+        
         //tao customer
         const customer = await Customer.create({email, name, phone, password});
 
@@ -21,7 +30,8 @@ const registerCustomer = async (req, res)=>{
             token: generateToken(customer._id),
         });
     }catch(error){
-        res.status(400).json({message: "Du lieu khong hop le", error: error.message})
+        // Pass error to error handler middleware
+        next(error);
     }
 };
 
@@ -48,7 +58,6 @@ const loginCustomer = async (req, res)=>{
         res.status(500).json({message: "Loi may chu"});
     }
 };
-// export {registerCustomer, loginCustomer};
 
 const getCustomerCart = async (req, res)=>{
     const customer = await Customer.findById(req.user._id);
@@ -65,53 +74,10 @@ const getCustomerCart = async (req, res)=>{
 //@desc Them/cap nhat san pham trong gio hang
 //@route POST /api/customer/cart
 //@access Private
-// const addItemToCart = async(req, res)=>{
-//     const {productId, quantity} = req.body;
-//     const customer = await Customer.findById(req.user._id);
-
-//     if(!customer){
-//         res.status(404)
-//         throw new Error('Không tìm thấy khách hàng');
-//     }
-
-//     //lay thong tin san pham tu database
-//     const product = await Product.findById(productId);
-//     if(!product){
-//         res.status(404);
-//         throw new Error('Không tìm thấy sản phẩm');
-//     }
-
-//     //kiem tra san pham da co trong gio hang chua
-//     const existItem = customer.cart.find(
-//         (item)=> item.product.toString()===productId
-//     );
-//     if(existItem){
-//         //neu co san pham trong gio hang thi chi cap nhat so luong
-//         existItem.quantity = Number(quantity);
-//     }else{
-//         //tao item moi neu chua co
-//         const cartItem = {
-//             name: product.name,
-//             quantity: Number(quantity),
-//             image: product.image,
-//             price: product.price,
-//             product: productId,
-//         };
-//         customer.cart.push(cartItem);
-//     }
-
-
-//     //luu lai vao database
-//     const updatedCustomer = await customer.save();
-//     res.status(201).json(updatedCustomer.cart);
-// };
-// backend/controllers/customerController.js
-
 const addItemToCart = async (req, res) => {
   try {
     const { productId, quantity } = req.body;
     
-    // LOG 1: Xem dữ liệu nhận được
     console.log("👉 1. Backend nhận yêu cầu thêm giỏ:", { productId, quantity, user: req.user._id });
 
     const customer = await Customer.findById(req.user._id);
@@ -123,7 +89,6 @@ const addItemToCart = async (req, res) => {
       throw new Error('Không tìm thấy sản phẩm');
     }
 
-    // LOG 2: Tìm thấy sản phẩm
     console.log("👉 2. Tìm thấy sản phẩm:", product.name);
 
     const cartItemIndex = customer.cart.findIndex(
@@ -134,7 +99,6 @@ const addItemToCart = async (req, res) => {
       customer.cart[cartItemIndex].quantity += Number(quantity);
       console.log("👉 3. Sản phẩm đã có, cập nhật số lượng mới:", customer.cart[cartItemIndex].quantity);
     } else {
-      // Quan trọng: Đảm bảo đủ trường dữ liệu theo Schema
       const newItem = {
         product: productId,
         name: product.name,
@@ -146,19 +110,16 @@ const addItemToCart = async (req, res) => {
       console.log("👉 3. Thêm sản phẩm mới vào mảng cart:", newItem);
     }
 
-    // LOG 4: Bắt đầu lưu
     console.log("👉 4. Đang lưu vào MongoDB...");
     const updatedCustomer = await customer.save();
     await customer.populate('cart.product')
     
-    // LOG 5: Lưu xong
     console.log("✅ 5. Lưu thành công! Giỏ hàng hiện tại:", updatedCustomer.cart.length, "món");
 
     res.status(201).json(updatedCustomer.cart);
 
   } catch (error) {
     console.error("❌ LỖI NGHIÊM TRỌNG TRONG CONTROLLER:", error.message);
-    // Bắt lỗi validation của Mongoose (thường là nguyên nhân chính)
     if (error.name === 'ValidationError') {
         console.error("Chi tiết lỗi Validate:", error.errors);
     }
@@ -169,7 +130,6 @@ const addItemToCart = async (req, res) => {
 //@desc xoa san pham khoi gio hang
 //@route DELETE /api/customer/cart/:productId
 //@access Private
-
 const removeItemFromCart = async(req, res)=>{
     const{productId}=req.params;
     const customer = await Customer.findById(req.user._id);
@@ -179,7 +139,6 @@ const removeItemFromCart = async(req, res)=>{
         throw new Error('Không tìm thấy khách hàng');
     }
 
-    //loai bo san pham can xoa
     customer.cart = customer.cart.filter(
         (item) => item.product.toString() !== productId
     );
@@ -187,15 +146,33 @@ const removeItemFromCart = async(req, res)=>{
     res.json(customer.cart);
 };
 
+// @desc    Lấy thông tin hồ sơ người dùng
+// @route   GET /api/customers/profile
+// @access  Private
+const getCustomerProfile = async (req, res) => {
+  const customer = await Customer.findById(req.user._id);
+
+  if (customer) {
+    res.json({
+      _id: customer._id,
+      name: customer.name,
+      email: customer.email,
+      phone: customer.phone,
+      isAdmin: customer.isAdmin,
+    });
+  } else {
+    res.status(404);
+    throw new Error('Không tìm thấy người dùng');
+  }
+};
 
 // @desc    Cập nhật hồ sơ người dùng
-// @route   PUT /api/customer/profile
+// @route   PUT /api/customers/profile
 // @access  Private
 const updateUserProfile = async (req, res) => {
   const customer = await Customer.findById(req.user._id);
 
   if (customer) {
-
     customer.name = req.body.name || customer.name;
     customer.phone = req.body.phone || customer.phone;
 
@@ -223,21 +200,17 @@ const updateUserProfile = async (req, res) => {
 // @route   PUT /api/customer/cart
 // @access  Private
 const updateCartItemQuantity = async (req, res) => {
-  const { productId, quantity } = req.body; // Nhận ID và Số lượng MỚI
+  const { productId, quantity } = req.body;
 
   const customer = await Customer.findById(req.user._id);
 
   if (customer) {
-    // 1. Tìm vị trí sản phẩm trong mảng cart
     const itemIndex = customer.cart.findIndex(
       (item) => item.product.toString() === productId
     );
 
     if (itemIndex > -1) {
-      // 2. Cập nhật số lượng
       customer.cart[itemIndex].quantity = Number(quantity);
-      
-      // 3. Lưu vào DB
       await customer.save();
       res.json(customer.cart);
     } else {
@@ -250,7 +223,18 @@ const updateCartItemQuantity = async (req, res) => {
   }
 };
 
+const clearCart = async(req, res)=>{
+    const customer = await Customer.findById(req.user._id);
 
+    if(!customer){
+        res.status(404);
+        throw new Error('Không tìm thấy khách hàng');
+    }
+
+    customer.cart = [];
+    await customer.save();
+    res.json({ message: 'Đã xóa giỏ hàng' });
+};
 
 export{
     registerCustomer,
@@ -258,6 +242,8 @@ export{
     getCustomerCart,
     addItemToCart,
     removeItemFromCart,
+    getCustomerProfile,
     updateUserProfile,
     updateCartItemQuantity,
+    clearCart,
 };

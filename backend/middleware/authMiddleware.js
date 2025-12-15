@@ -1,41 +1,54 @@
 import jwt from 'jsonwebtoken';
-import Customer from '../models/customerModel.js';
-const protect = async (req, res, next)=>{
+import User from '../models/userModel.js';
+
+// Middleware bảo vệ route (yêu cầu đăng nhập)
+const protect = async (req, res, next) => {
     let token;
 
-    //doc token tu header 'Authorization'
-    if(
+    // Đọc token từ header 'Authorization'
+    if (
         req.headers.authorization &&
         req.headers.authorization.startsWith('Bearer')
-    ){
-        try{
-            // lay token
+    ) {
+        try {
+            // Lấy token
             token = req.headers.authorization.split(' ')[1];
-            //giai ma token de lay id
+            
+            // Giải mã token để lấy id
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
-            req.user = await Customer.findById(decoded.id).select('-password');
+            
+            // Lấy thông tin user (không bao gồm password)
+            req.user = await User.findById(decoded.id).select('-password');
+            
+            if (!req.user) {
+                return res.status(401).json({ 
+                    message: 'Không có quyền truy cập, người dùng không tồn tại' 
+                });
+            }
+            
             next();
-        }catch(error){
+        } catch (error) {
             console.error(error);
-            res.status(401);
-            throw new Error('Không có quyền truy cập, token không hợp lệ');
+            res.status(401).json({ 
+                message: 'Không có quyền truy cập, token không hợp lệ' 
+            });
         }
-    }
-
-    if(!token){
-        res.status(401);
-        throw new Error('Không có quyền truy cập, Không tìm thấy token');
+    } else {
+        res.status(401).json({ 
+            message: 'Không có quyền truy cập, không tìm thấy token' 
+        });
     }
 };
 
-//kiem tra quyen admin
-const admin = (req, res, next)=>{
-    if (req.user && req.user.isAdmin){
+// Middleware kiểm tra quyền admin
+const admin = (req, res, next) => {
+    if (req.user && req.user.isAdmin) {
         next();
-    }else{
-        res.status(401);
-        throw new Error('Không có quyền truy cập, yêu cầu quyền Admin');
+    } else {
+        res.status(403).json({ 
+            message: 'Không có quyền truy cập, yêu cầu quyền Admin' 
+        });
     }
 };
 
-export {protect, admin};
+export { protect, admin };

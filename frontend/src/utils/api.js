@@ -1,6 +1,10 @@
 import axios from 'axios';
 
+// Nếu có VITE_API_URL thì dùng, không thì dùng full URL trực tiếp
+// Vite proxy đôi khi không hoạt động, nên dùng full URL để chắc chắn
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+console.log('🔗 API Base URL:', API_URL);
 
 const api = axios.create({
   baseURL: API_URL,
@@ -16,17 +20,28 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    // Log request để debug
+    console.log(`🚀 [API Request] ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`, config.data || '');
     return config;
   },
   (error) => {
+    console.error('❌ [API Request Error]', error);
     return Promise.reject(error);
   }
 );
 
 // Handle response errors
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log(`✅ [API Response] ${response.config.method?.toUpperCase()} ${response.config.url}`, response.status);
+    return response;
+  },
   (error) => {
+    console.error(`❌ [API Error] ${error.config?.method?.toUpperCase()} ${error.config?.url}`, {
+      status: error.response?.status,
+      message: error.response?.data?.message || error.message,
+      data: error.response?.data
+    });
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
@@ -36,46 +51,40 @@ api.interceptors.response.use(
   }
 );
 
-// Auth API
+// ✅ Auth API
 export const authAPI = {
-  register: (userData) => api.post('/users/register', userData),
-  login: (credentials) => api.post('/users/login', credentials),
-  getProfile: () => api.get('/users/profile'),
+  login: (credentials) => api.post('/customers/login', credentials),  // Thêm chữ 's'
+  register: (userData) => api.post('/customers', userData),           // Thêm chữ 's'
+  getProfile: () => api.get('/customers/profile'),                    // Thêm chữ 's'
 };
 
-// Products API (Phones)
+// ✅ Products API
 export const productsAPI = {
-  getProducts: (brand) => api.get('/products', { params: { brand } }),
+  getProducts: (category) => api.get('/products', { params: { category: category } }),
   getProductById: (id) => api.get(`/products/${id}`),
   getAllProducts: () => api.get('/products/admin/all'),
   createProduct: (productData) => api.post('/products', productData),
   updateProduct: (id, productData) => api.put(`/products/${id}`, productData),
   deleteProduct: (id) => api.delete(`/products/${id}`),
-  updateStock: (id, inStock) =>
-    api.put(`/products/${id}/stock`, { inStock }),
+  updateStock: (id, countInStock) => api.put(`/products/${id}/stock`, { countInStock }),
 };
 
-// Orders API
+// ✅ Orders API
 export const ordersAPI = {
   createOrder: (orderData) => api.post('/orders', orderData),
-  getMyOrders: () => api.get('/orders/my-orders'),
+  getMyOrders: () => api.get('/orders/myorders'),
   getOrderById: (id) => api.get(`/orders/${id}`),
   getAllOrders: () => api.get('/orders'),
-  updateOrderStatus: (id, status) =>
-    api.put(`/orders/${id}/status`, { status }),
-  cancelOrder: (id) => api.put(`/orders/${id}/cancel`),
+  updateOrderToDelivered: (id) => api.put(`/orders/${id}/deliver`),
+  cancelOrder: (id) => api.delete(`/orders/${id}`),
 };
 
-// Cart API
+// ✅ Cart API
 export const cartAPI = {
-  getCart: () => api.get('/cart'),
-  addToCart: (productId, quantity) => 
-    api.post('/cart', { productId, quantity }),
-  updateCartItem: (productId, quantity) => 
-    api.put('/cart', { productId, quantity }),
-  removeFromCart: (productId) => 
-    api.delete(`/cart/${productId}`),
-  clearCart: () => api.delete('/cart'),
+  getCart: () => api.get('/customers/cart'),
+  addToCart: (productId, quantity) => api.post('/customers/cart', { productId, quantity }),
+  updateCartItem: (productId, quantity) => api.put('/customers/cart', { productId, quantity }),
+  removeFromCart: (productId) => api.delete(`/customers/cart/${productId}`),
 };
 
 export default api;

@@ -28,11 +28,15 @@ const customerSchema = mongoose.Schema(
     timestamps: true,
   }
 );
-customerSchema.pre("save", async function (next){
-    if(!this.isModified("password")){return next();}
+customerSchema.pre("save", async function (){
+    // Only hash password if it's been modified (or is new)
+    if(!this.isModified("password")){
+        return;
+    }
     
-    this.password= await hashPassword(this.password);
-    next();
+    // Hash the password
+    this.password = await hashPassword(this.password);
+    // Mongoose will automatically handle the promise from this async function
 });
 
 //ham matchpasword

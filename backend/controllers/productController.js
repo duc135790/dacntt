@@ -41,6 +41,29 @@ const getProductById = async (req, res) => {
   }
 };
 
+// @desc    Lấy TẤT CẢ sản phẩm cho Admin (không filter, có sort)
+// @route   GET /api/products/admin/all
+// @access  Private/Admin
+const getAllProductsAdmin = async (req, res) => {
+  try {
+    const products = await Product.find({})
+      .sort({ createdAt: -1 })
+      .select('-__v'); // Bỏ field __v không cần thiết
+    
+    res.json({
+      success: true,
+      count: products.length,
+      products: products
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false,
+      message: 'Lỗi khi lấy danh sách sản phẩm',
+      error: error.message 
+    });
+  }
+};
+
 // @desc    Tạo sản phẩm mới (Dữ liệu mẫu)
 // @route   POST /api/products
 // @access  Private/Admin
@@ -58,7 +81,7 @@ const createProduct = async (req, res) => {
         publisher: 'Nhà xuất bản',
         publicationYear: 2024,
         language: 'Tiếng Việt',
-        pages: 100
+        pageCount: 100
     });
 
     const createdProduct = await product.save();
@@ -81,7 +104,7 @@ const updateProduct = async (req, res) => {
       publisher,
       publicationYear,
       language,
-      pages
+      pageCount
   } = req.body;
 
   const product = await Product.findById(req.params.id);
@@ -99,13 +122,33 @@ const updateProduct = async (req, res) => {
     product.publisher = publisher || product.publisher;
     product.publicationYear = publicationYear || product.publicationYear;
     product.language = language || product.language;
-    product.pages = pages || product.pages;
+    product.pageCount = pageCount || product.pageCount;
 
     const updatedProduct = await product.save();
     res.json(updatedProduct);
   } else {
     res.status(404);
     throw new Error('Không tìm thấy sách');
+  }
+};
+
+// @desc    Cập nhật số lượng tồn kho
+// @route   PUT /api/products/:id/stock
+// @access  Private/Admin
+const updateProductStock = async (req, res) => {
+  try {
+    const { countInStock } = req.body;
+    const product = await Product.findById(req.params.id);
+
+    if (product) {
+      product.countInStock = countInStock;
+      const updatedProduct = await product.save();
+      res.json(updatedProduct);
+    } else {
+      res.status(404).json({ message: 'Không tìm thấy sản phẩm' });
+    }
+  } catch (error) {
+    res.status(400).json({ message: error.message });
   }
 };
 
@@ -182,8 +225,10 @@ const createProductReview = async (req, res) => {
 export {
   getProducts,
   getProductById,
+  getAllProductsAdmin,
   createProduct,
   updateProduct,
+  updateProductStock,
   deleteProduct,
   createProductReview,
 };
