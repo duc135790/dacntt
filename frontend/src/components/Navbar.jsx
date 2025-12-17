@@ -12,7 +12,7 @@ const Navbar = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 shadow-md">
+    <header className="sticky top-0 z-[100] shadow-md">
       {/* Header Top - Dark */}
       <div className="bg-gray-900 text-white py-2">
         <div className="container mx-auto px-4">
@@ -105,32 +105,6 @@ const Navbar = () => {
           </div>
         </div>
       </div>
-
-      {/* Navigation - White with border */}
-      <nav className="bg-white border-t border-b border-gray-200">
-        <div className="container mx-auto px-4">
-          <div className="flex justify-center space-x-10 py-3">
-            <Link to="/" className="text-sm font-medium text-gray-700 hover:text-red-600 transition-colors uppercase tracking-wide">
-              Trang chủ
-            </Link>
-            <Link to="/products?category=Văn học" className="text-sm font-medium text-gray-700 hover:text-red-600 transition-colors uppercase tracking-wide">
-              Văn học
-            </Link>
-            <Link to="/products?category=Kinh tế" className="text-sm font-medium text-gray-700 hover:text-red-600 transition-colors uppercase tracking-wide">
-              Kinh tế
-            </Link>
-            <Link to="/products?category=Kỹ năng sống" className="text-sm font-medium text-gray-700 hover:text-red-600 transition-colors uppercase tracking-wide">
-              Kỹ năng sống
-            </Link>
-            <Link to="/products?category=Thiếu nhi" className="text-sm font-medium text-gray-700 hover:text-red-600 transition-colors uppercase tracking-wide">
-              Thiếu nhi
-            </Link>
-            <Link to="/products?category=Ngoại ngữ" className="text-sm font-medium text-gray-700 hover:text-red-600 transition-colors uppercase tracking-wide">
-              Ngoại ngữ
-            </Link>
-          </div>
-        </div>
-      </nav>
     </header>
   );
 };

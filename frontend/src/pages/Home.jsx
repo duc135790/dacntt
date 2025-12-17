@@ -13,18 +13,25 @@ const Home = () => {
 
   const slides = [
     {
-      title: 'SÁCH KINH TẾ HAY',
+      title: '🔥 GIẢM GIÁ ĐẾN 50%',
+      subtitle: 'Bộ sưu tập Văn học Việt Nam - Đọc để hiểu đời',
+      bg: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      image: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=800',
+      link: '/products?category=Văn học'
+    },
+    {
+      title: '⚡ SÁCH KINH TẾ HAY',
       subtitle: 'Nâng cao tư duy - Phát triển sự nghiệp',
-      bg: 'linear-gradient(90deg, #ff7eb3 0%, #ff758c 100%)', 
+      bg: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
       image: 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=800',
       link: '/products?category=Kinh tế'
     },
     {
-      title: 'GIẢM GIÁ ĐẾN 50%',
-      subtitle: 'Bộ sưu tập Văn học Việt Nam - Đọc để hiểu đời',
-      bg: 'linear-gradient(90deg, #f093fb 0%, #f5576c 100%)',
-      image: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=800',
-      link: '/products?category=Văn học'
+      title: '🎨 SÁCH THIẾU NHI',
+      subtitle: 'Phát triển trí tuệ - Khơi nguồn sáng tạo',
+      bg: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+      image: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=800',
+      link: '/products?category=Thiếu nhi'
     }
   ];
 
@@ -49,7 +56,6 @@ const Home = () => {
     fetchProducts();
   }, []);
 
-  // --- COMPONENT Ô SẢN PHẨM: SỬA GIỐNG ẢNH 1 ---
   const ProductCard = ({ product }) => (
     <div className="bg-white rounded-lg border border-gray-200 p-3 transition-all hover:shadow-md flex flex-col h-full">
       <div className="relative mb-3 aspect-[3/4] overflow-hidden rounded-md group">
@@ -59,18 +65,14 @@ const Home = () => {
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           onError={(e) => e.target.src = 'https://via.placeholder.com/300x400?text=Book'}
         />
-        {/* Nhãn "Mới" xanh lá như ảnh 1 */}
         <div className="absolute top-2 left-2 bg-[#27ae60] text-white text-[10px] px-2 py-0.5 rounded-full font-bold shadow-sm">
           Mới
         </div>
       </div>
-
       <div className="flex flex-col flex-grow">
         <h3 className="text-sm font-medium text-gray-800 line-clamp-2 h-10 mb-1 leading-tight">
           {product.name}
         </h3>
-        
-        {/* Giá tiền và số lượng tồn kho (Ảnh 1) */}
         <div className="mt-2">
           <div className="text-[#d72e2e] font-bold text-lg mb-0.5">
             {product.price?.toLocaleString()}đ
@@ -79,8 +81,6 @@ const Home = () => {
             Còn: {product.countInStock || 50} sản phẩm
           </div>
         </div>
-
-        {/* Nút Thêm vào giỏ hàng màu đỏ trải dài (Ảnh 1) */}
         <button className="w-full bg-[#d72e2e] text-white py-2 rounded-md font-bold text-sm hover:bg-red-700 transition-colors uppercase">
           Thêm vào giỏ
         </button>
@@ -88,7 +88,6 @@ const Home = () => {
     </div>
   );
 
-  // --- COMPONENT CÔNG CỤ TÌM KIẾM/LỌC (ẢNH 1) ---
   const FilterBar = () => (
     <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm mb-8 flex items-center justify-between">
       <div className="flex items-center gap-6">
@@ -117,7 +116,32 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-[#f8f9fa] font-sans flex flex-col">
-      {/* BANNER (Ảnh 2) */}
+      
+      {/* 1. NAVIGATION - KHÔNG STICKY, chỉ là thanh bình thường */}
+      <nav className="bg-white border-t border-b border-gray-200 shadow-sm">
+        <div className="container mx-auto px-4">
+          <div className="flex justify-center items-center space-x-10 py-3">
+            {[
+              { name: "Trang chủ", path: "/" },
+              { name: "Văn học", path: "/products?category=Văn học" },
+              { name: "Kinh tế", path: "/products?category=Kinh tế" },
+              { name: "Kỹ năng sống", path: "/products?category=Kỹ năng sống" },
+              { name: "Thiếu nhi", path: "/products?category=Thiếu nhi" },
+              { name: "Ngoại ngữ", path: "/products?category=Ngoại ngữ" },
+            ].map((item, index) => (
+              <Link
+                key={index}
+                to={item.path}
+                className="text-sm font-medium text-gray-700 hover:text-red-600 transition-colors uppercase tracking-wide"
+              >
+                {item.name}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </nav>
+
+      {/* 2. BANNER */}
       <section className="relative h-[420px] overflow-hidden">
         {slides.map((slide, index) => (
           <div
@@ -151,16 +175,13 @@ const Home = () => {
         <button onClick={() => setCurrentSlide((prev) => (prev + 1) % slides.length)} className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-white/20 p-2 rounded-full text-white hover:bg-white/40"><FaChevronRight size={20}/></button>
       </section>
 
-      {/* TIÊU ĐỀ CHÍNH (Ảnh 1) */}
-      <div className="text-center pt-12 pb-6">
-        <h1 className="text-3xl font-black text-gray-800 mb-1 uppercase tracking-tight">Sách Hay Chính Hãng</h1>
-        <p className="text-sm text-gray-400 font-semibold tracking-wide">Tìm thấy {featuredProducts.length + newProducts.length} sản phẩm</p>
-      </div>
-
-      {/* MAIN CONTENT (Ảnh 2 bố cục, Ô sản phẩm Ảnh 1) */}
+      {/* 3. MAIN CONTENT */}
       <main className="container mx-auto px-4 py-8">
-        
-        {/* Thanh lọc giống ảnh 1 */}
+        <div className="text-center pt-4 pb-8">
+          <h1 className="text-3xl font-black text-gray-800 mb-1 uppercase tracking-tight">Sách Hay Chính Hãng</h1>
+          <p className="text-sm text-gray-400 font-semibold tracking-wide">Tìm thấy {featuredProducts.length + newProducts.length} sản phẩm</p>
+        </div>
+
         <FilterBar />
 
         {/* SÁCH NỔI BẬT */}
@@ -190,37 +211,37 @@ const Home = () => {
         </section>
       </main>
 
-      {/* FOOTER */}
+      {/* 4. FOOTER */}
       <footer className="bg-[#0f172a] text-white pt-16 pb-8 mt-auto">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-12 mb-16 text-sm">
             <div>
               <h4 className="font-bold text-lg mb-6">Về Chúng Tôi</h4>
               <ul className="space-y-3 text-gray-400">
-                <li><Link className="hover:text-white transition-colors">Giới thiệu</Link></li>
-                <li><Link className="hover:text-white transition-colors">Tin tức</Link></li>
-                <li><Link className="hover:text-white transition-colors">Tuyển dụng</Link></li>
+                <li><Link to="/about" className="hover:text-white transition-colors">Giới thiệu</Link></li>
+                <li><Link to="/news" className="hover:text-white transition-colors">Tin tức</Link></li>
+                <li><Link to="/careers" className="hover:text-white transition-colors">Tuyển dụng</Link></li>
               </ul>
             </div>
             <div>
               <h4 className="font-bold text-lg mb-6">Chính Sách</h4>
               <ul className="space-y-3 text-gray-400">
-                <li><Link className="hover:text-white transition-colors">Chính sách đổi trả</Link></li>
-                <li><Link className="hover:text-white transition-colors">Chính sách vận chuyển</Link></li>
+                <li><Link to="/return" className="hover:text-white transition-colors">Chính sách đổi trả</Link></li>
+                <li><Link to="/shipping" className="hover:text-white transition-colors">Chính sách vận chuyển</Link></li>
               </ul>
             </div>
             <div>
               <h4 className="font-bold text-lg mb-6">Hỗ Trợ</h4>
               <ul className="space-y-3 text-gray-400">
-                <li><Link className="hover:text-white transition-colors">Hướng dẫn mua hàng</Link></li>
-                <li><Link className="hover:text-white transition-colors">Câu hỏi thường gặp</Link></li>
+                <li><Link to="/guide" className="hover:text-white transition-colors">Hướng dẫn mua hàng</Link></li>
+                <li><Link to="/faq" className="hover:text-white transition-colors">Câu hỏi thường gặp</Link></li>
               </ul>
             </div>
             <div>
               <h4 className="font-bold text-lg mb-6">Kết Nối</h4>
               <ul className="space-y-3 text-gray-400">
-                <li><Link className="hover:text-white transition-colors">Facebook</Link></li>
-                <li><Link className="hover:text-white transition-colors">Instagram</Link></li>
+                <li><Link to="#" className="hover:text-white transition-colors">Facebook</Link></li>
+                <li><Link to="#" className="hover:text-white transition-colors">Instagram</Link></li>
               </ul>
             </div>
           </div>
@@ -247,13 +268,15 @@ const Home = () => {
 };
 
 const SkeletonGrid = ({ count }) => (
-  [...Array(count)].map((_, i) => (
-    <div key={i} className="bg-white p-4 rounded-lg animate-pulse border border-gray-100">
-      <div className="bg-gray-100 aspect-[3/4] rounded-md mb-4" />
-      <div className="bg-gray-100 h-4 w-3/4 mb-2" />
-      <div className="bg-gray-200 h-10 w-full rounded" />
-    </div>
-  ))
+  <div className="grid grid-cols-2 md:grid-cols-4 gap-6 w-full col-span-full">
+    {[...Array(count)].map((_, i) => (
+      <div key={i} className="bg-white p-4 rounded-lg animate-pulse border border-gray-100">
+        <div className="bg-gray-100 aspect-[3/4] rounded-md mb-4" />
+        <div className="bg-gray-100 h-4 w-3/4 mb-2" />
+        <div className="bg-gray-200 h-10 w-full rounded" />
+      </div>
+    ))}
+  </div>
 );
 
 export default Home;
