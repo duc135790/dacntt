@@ -19,7 +19,10 @@ export const AuthProvider = ({ children }) => {
     const storedUser = localStorage.getItem('user');
     const token = localStorage.getItem('token');
     if (storedUser && token) {
-      setUser(JSON.parse(storedUser));
+      const userData = JSON.parse(storedUser);
+      setUser(userData);
+      console.log('✅ User từ localStorage:', userData);
+      console.log('✅ isAdmin:', userData.isAdmin);
     }
     setLoading(false);
   }, []);
@@ -28,11 +31,17 @@ export const AuthProvider = ({ children }) => {
     try {
       console.log('🔐 Đang đăng nhập với:', { email });
       const response = await authAPI.login({ email, password });
-      console.log('✅ Đăng nhập thành công:', response.data);
+      console.log('✅ Response đăng nhập:', response.data);
+      
       const { token, ...userData } = response.data;
+      
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
+      
+      console.log('✅ User sau login:', userData);
+      console.log('✅ isAdmin:', userData.isAdmin);
+      
       return { success: true };
     } catch (error) {
       console.error('❌ Lỗi đăng nhập:', error.response?.data || error.message);
@@ -47,11 +56,14 @@ export const AuthProvider = ({ children }) => {
     try {
       console.log('📝 Đang đăng ký với:', userData);
       const response = await authAPI.register(userData);
-      console.log('✅ Đăng ký thành công:', response.data);
+      console.log('✅ Response đăng ký:', response.data);
+      
       const { token, ...userInfo } = response.data;
+      
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(userInfo));
       setUser(userInfo);
+      
       return { success: true };
     } catch (error) {
       console.error('❌ Lỗi đăng ký:', error.response?.data || error.message);
@@ -68,7 +80,10 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
-  const isAdmin = user?.isAdmin || false;
+  // ✅ FIX: Kiểm tra isAdmin từ user object
+  const isAdmin = user?.isAdmin === true;
+
+  console.log('🔍 AuthContext State:', { user, isAdmin, loading });
 
   return (
     <AuthContext.Provider
@@ -78,4 +93,3 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
-

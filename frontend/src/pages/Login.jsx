@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FaUser, FaLock, FaBook } from 'react-icons/fa';
+import { FaUser, FaLock } from 'react-icons/fa';
 
 const Login = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -9,6 +9,8 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  // ❌ XÓA useEffect redirect - Đây là nguyên nhân gây lỗi!
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -24,7 +26,8 @@ const Login = () => {
     setLoading(false);
 
     if (result.success) {
-      navigate('/');
+      // Redirect về trang chủ sau khi login thành công
+      navigate('/', { replace: true });
     } else {
       setError(result.message);
     }
@@ -82,6 +85,12 @@ const Login = () => {
                   placeholder="Nhập mật khẩu"
                 />
               </div>
+            </div>
+
+            <div className="text-right">
+              <Link to="/forgot-password" className="text-sm text-red-600 hover:underline font-medium">
+                Quên mật khẩu?
+              </Link>
             </div>
 
             <button

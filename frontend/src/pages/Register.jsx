@@ -15,6 +15,8 @@ const Register = () => {
   const { register } = useAuth();
   const navigate = useNavigate();
 
+  // ❌ XÓA useEffect redirect - Đây là nguyên nhân gây lỗi!
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
     setError('');
@@ -29,7 +31,8 @@ const Register = () => {
     setLoading(false);
 
     if (result.success) {
-      navigate('/');
+      // Redirect về trang chủ sau khi register thành công
+      navigate('/', { replace: true });
     } else {
       setError(result.message);
     }
@@ -125,7 +128,7 @@ const Register = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
+              className="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:opacity-50 mt-6"
             >
               {loading ? 'Đang đăng ký...' : 'Đăng ký'}
             </button>

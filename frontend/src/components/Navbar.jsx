@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FaBook, FaUser, FaSignOutAlt, FaCog, FaShoppingCart, FaBoxOpen, FaSearch, FaBars, FaTimes } from 'react-icons/fa';
+import { FaBook, FaShoppingCart, FaBoxOpen, FaSearch, FaBars, FaTimes, FaCog } from 'react-icons/fa';
 
 const Navbar = () => {
-  const { user, logout, isAdmin } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  console.log('🔍 Navbar - User:', user);
 
   const handleLogout = () => {
     logout();
@@ -29,8 +31,8 @@ const Navbar = () => {
             <div className="flex items-center space-x-3 sm:space-x-4">
               {user ? (
                 <>
-                  <span className="hidden sm:inline">Xin chào, <strong>{user.username}</strong></span>
-                  <span className="sm:hidden"><strong>{user.username}</strong></span>
+                  <span className="hidden sm:inline">Xin chào, <strong>{user.name || user.email}</strong></span>
+                  <span className="sm:hidden"><strong>{user.name || user.email}</strong></span>
                   <button 
                     onClick={handleLogout}
                     className="hover:text-red-400 transition-colors"
@@ -99,15 +101,14 @@ const Navbar = () => {
                     <span>Đơn hàng</span>
                   </Link>
 
-                  {isAdmin && (
-                    <Link
-                      to="/admin"
-                      className="flex items-center space-x-2 px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-all font-medium"
-                    >
-                      <FaCog />
-                      <span>Quản trị</span>
-                    </Link>
-                  )}
+                  <Link
+                    to="/admin"
+                    onClick={() => console.log('🖱️ CLICK QUẢN TRỊ - Navigate to /admin')}
+                    className="flex items-center space-x-2 px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-all font-medium"
+                  >
+                    <FaCog />
+                    <span>Quản trị</span>
+                  </Link>
                 </>
               )}
             </div>
@@ -121,7 +122,7 @@ const Navbar = () => {
             </button>
           </div>
 
-          {/* Mobile Search - Shown only on small screens */}
+          {/* Mobile Search */}
           <div className="md:hidden pb-3">
             <div className="relative">
               <input
@@ -177,16 +178,14 @@ const Navbar = () => {
                       <span>Đơn hàng</span>
                     </Link>
 
-                    {isAdmin && (
-                      <Link
-                        to="/admin"
-                        onClick={closeMobileMenu}
-                        className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-all"
-                      >
-                        <FaCog />
-                        <span>Quản trị</span>
-                      </Link>
-                    )}
+                    <Link
+                      to="/admin"
+                      onClick={closeMobileMenu}
+                      className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-all"
+                    >
+                      <FaCog />
+                      <span>Quản trị</span>
+                    </Link>
                   </>
                 )}
               </nav>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FaEnvelope, FaBook, FaCheckCircle, FaArrowLeft } from 'react-icons/fa';
+import { FaEnvelope, FaArrowLeft } from 'react-icons/fa';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
@@ -14,7 +14,6 @@ const ForgotPassword = () => {
     setError('');
 
     try {
-      // Giả lập gửi email
       await new Promise(resolve => setTimeout(resolve, 1500));
       setSuccess(true);
     } catch (err) {
@@ -26,29 +25,24 @@ const ForgotPassword = () => {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-500 via-red-500 to-pink-500 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-        <div className="absolute inset-0">
-          <div className="absolute top-0 left-0 w-96 h-96 bg-white opacity-10 rounded-full -translate-x-1/2 -translate-y-1/2"></div>
-          <div className="absolute bottom-0 right-0 w-96 h-96 bg-white opacity-10 rounded-full translate-x-1/2 translate-y-1/2"></div>
-        </div>
-
-        <div className="max-w-md w-full relative z-10 animate-fadeIn">
-          <div className="bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border border-white/20 text-center">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-6">
-              <FaCheckCircle className="text-green-600 text-4xl" />
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
+        <div className="max-w-md w-full">
+          <div className="bg-white rounded-lg shadow-md p-8 text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
+              <span className="text-green-600 text-3xl">✓</span>
             </div>
             
-            <h2 className="text-3xl font-bold text-gray-800 mb-3">
+            <h2 className="text-2xl font-bold text-gray-800 mb-3">
               Kiểm tra email của bạn
             </h2>
             
-            <p className="text-gray-600 mb-8 leading-relaxed">
+            <p className="text-gray-600 mb-6">
               Chúng tôi đã gửi hướng dẫn đặt lại mật khẩu đến email <strong>{email}</strong>
             </p>
             
             <Link
               to="/login"
-              className="w-full bg-gradient-to-r from-orange-600 to-pink-600 text-white py-3 rounded-xl font-semibold hover:from-orange-700 hover:to-pink-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-[1.02] inline-block"
+              className="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors inline-block"
             >
               Quay lại đăng nhập
             </Link>
@@ -59,49 +53,42 @@ const ForgotPassword = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-500 via-red-500 to-pink-500 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-      <div className="absolute inset-0">
-        <div className="absolute top-0 left-0 w-96 h-96 bg-white opacity-10 rounded-full -translate-x-1/2 -translate-y-1/2"></div>
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-white opacity-10 rounded-full translate-x-1/2 translate-y-1/2"></div>
-      </div>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
+      <div className="max-w-md w-full">
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <Link to="/" className="inline-flex items-center gap-2 text-3xl font-bold mb-2">
+            <span className="text-gray-800">BOOK</span>
+            <span className="text-red-600">STORE</span>
+          </Link>
+          <p className="text-gray-600">Khôi phục mật khẩu</p>
+        </div>
 
-      <div className="max-w-md w-full relative z-10 animate-fadeIn">
-        <div className="bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border border-white/20">
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-orange-600 to-pink-600 rounded-2xl mb-4 shadow-lg">
-              <FaBook className="text-white text-2xl" />
-            </div>
-            <h2 className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent">
-              Quên mật khẩu
-            </h2>
-            <p className="mt-2 text-sm text-gray-600">
-              Nhập email để nhận hướng dẫn đặt lại mật khẩu
-            </p>
-          </div>
+        <div className="bg-white rounded-lg shadow-md p-8">
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Quên mật khẩu</h2>
+          <p className="text-sm text-gray-600 mb-6">
+            Nhập email để nhận hướng dẫn đặt lại mật khẩu
+          </p>
 
-          <form className="space-y-6" onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-              <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-lg animate-slideIn">
-                <p className="font-medium">{error}</p>
+              <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-sm">
+                {error}
               </div>
             )}
 
             <div>
-              <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Email
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <FaEnvelope className="text-gray-400" />
-                </div>
+                <FaEnvelope className="absolute left-3 top-3 text-gray-400" />
                 <input
-                  id="email"
-                  name="email"
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="input-focus appearance-none block w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl placeholder-gray-400 focus:outline-none focus:border-orange-500 transition-all"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
                   placeholder="Nhập email của bạn"
                 />
               </div>
@@ -110,22 +97,15 @@ const ForgotPassword = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-orange-600 to-pink-600 text-white py-3 rounded-xl font-semibold hover:from-orange-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
+              className="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
             >
-              {loading ? (
-                <span className="flex items-center justify-center">
-                  <div className="spinner mr-2" style={{ width: '20px', height: '20px', borderWidth: '2px' }}></div>
-                  Đang gửi...
-                </span>
-              ) : (
-                'Gửi hướng dẫn'
-              )}
+              {loading ? 'Đang gửi...' : 'Gửi hướng dẫn'}
             </button>
 
             <div className="text-center">
               <Link
                 to="/login"
-                className="inline-flex items-center text-sm font-semibold text-orange-600 hover:text-pink-600 transition-colors"
+                className="inline-flex items-center text-sm font-semibold text-red-600 hover:underline"
               >
                 <FaArrowLeft className="mr-2" />
                 Quay lại đăng nhập
