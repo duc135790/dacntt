@@ -92,7 +92,7 @@ const Home = () => {
     <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm mb-8 flex items-center justify-between">
       <div className="flex items-center gap-6">
         <div className="flex items-center gap-3">
-          <span className="text-sm font-semibold text-gray-700">Thương hiệu:</span>
+          <span className="text-sm font-semibold text-gray-700">Thể loại:</span>
           <select className="border border-gray-300 rounded px-3 py-1.5 text-sm bg-white focus:outline-none focus:border-blue-500 min-w-[120px]">
             <option>Văn học</option>
             <option>Kinh tế</option>

@@ -22,8 +22,11 @@ const customerSchema = mongoose.Schema(
     phone: { type: String, required: false },
     password: { type: String, required: true },
     isAdmin: { type: Boolean, default: false },
+    resetPasswordToken: { type: String },
+    resetPasswordExpires: { type: Date },
     cart: [cartItemSchema], // Sử dụng schema lồng
   },
+  
   {
     timestamps: true,
   }

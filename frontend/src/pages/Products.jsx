@@ -68,7 +68,7 @@ const Products = () => {
         <div className="bg-white p-5 rounded-lg mb-5 border border-gray-200 shadow-sm">
           <div className="flex flex-wrap gap-4 items-center">
             <div className="flex items-center gap-3">
-              <label className="text-sm font-semibold text-gray-700">Thương hiệu:</label>
+              <label className="text-sm font-semibold text-gray-700">Thể loại:</label>
               <select
                 value={filter}
                 onChange={(e) => handleFilterChange(e.target.value)}
