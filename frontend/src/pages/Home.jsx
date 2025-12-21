@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
-  FaBook, FaFire, FaChevronLeft, FaChevronRight, FaUndo, FaShoppingCart 
+  FaBook, FaFire, FaChevronLeft, FaChevronRight, FaShoppingCart 
 } from 'react-icons/fa';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
@@ -19,24 +19,24 @@ const Home = () => {
   const slides = [
     {
       title: '🔥 GIẢM GIÁ ĐẾN 50%',
-      subtitle: 'Bộ sưu tập Văn học Việt Nam - Đọc để hiểu đời',
+      subtitle: 'Bộ sưu tập Quần áo thời trang - Phong cách hiện đại',
       bg: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      image: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=800',
-      link: '/products?category=Văn học'
+      image: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=800',
+      link: '/products?category=Quần áo'
     },
     {
-      title: '⚡ SÁCH KINH TẾ HAY',
-      subtitle: 'Nâng cao tư duy - Phát triển sự nghiệp',
+      title: '⚡ ĐỒ ĐIỆN TỬ HOT',
+      subtitle: 'Công nghệ mới nhất - Giá tốt nhất',
       bg: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-      image: 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=800',
-      link: '/products?category=Kinh tế'
+      image: 'https://images.unsplash.com/photo-1468495244123-6c6c332eeece?w=800',
+      link: '/products?category=Đồ điện tử'
     },
     {
-      title: '🎨 SÁCH THIẾU NHI',
-      subtitle: 'Phát triển trí tuệ - Khơi nguồn sáng tạo',
+      title: '🎨 PHỤ KIỆN ĐẸP',
+      subtitle: 'Làm đẹp - Tăng thêm phong cách',
       bg: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-      image: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=800',
-      link: '/products?category=Thiếu nhi'
+      image: 'https://images.unsplash.com/photo-1594633313593-bab3825d0caf?w=800',
+      link: '/products?category=Phụ kiện'
     }
   ];
 
@@ -94,7 +94,7 @@ const Home = () => {
             src={product.image} 
             alt={product.name} 
             className={`w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 ${isOutOfStock ? 'opacity-50 grayscale' : ''}`}
-            onError={(e) => e.target.src = 'https://via.placeholder.com/300x400?text=Book'}
+            onError={(e) => e.target.src = 'https://via.placeholder.com/300x400?text=Product'}
           />
           {isOutOfStock ? (
             <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center">
@@ -164,60 +164,10 @@ const Home = () => {
     );
   };
 
-  const FilterBar = () => (
-    <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm mb-8 flex items-center justify-between">
-      <div className="flex items-center gap-6">
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-semibold text-gray-700">Thể loại:</span>
-          <select className="border border-gray-300 rounded px-3 py-1.5 text-sm bg-white focus:outline-none focus:border-blue-500 min-w-[120px]">
-            <option>Văn học</option>
-            <option>Kinh tế</option>
-            <option>Ngoại ngữ</option>
-          </select>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-semibold text-gray-700">Sắp xếp:</span>
-          <select className="border border-gray-300 rounded px-3 py-1.5 text-sm bg-white focus:outline-none focus:border-blue-500 min-w-[120px]">
-            <option>Mới nhất</option>
-            <option>Giá từ thấp đến cao</option>
-            <option>Giá từ cao đến thấp</option>
-          </select>
-        </div>
-      </div>
-      <button className="flex items-center gap-2 text-sm text-gray-700 hover:text-red-500 border border-gray-300 px-4 py-1.5 rounded bg-gray-50 transition-all font-medium">
-        <FaUndo size={12} /> Đặt lại
-      </button>
-    </div>
-  );
-
   return (
     <div className="min-h-screen bg-[#f8f9fa] font-sans flex flex-col">
       
-      {/* 1. NAVIGATION */}
-      <nav className="bg-white border-t border-b border-gray-200 shadow-sm">
-        <div className="container mx-auto px-4">
-          <div className="flex justify-center items-center space-x-10 py-3">
-            {[
-              { name: "Trang chủ", path: "/" },
-              { name: "Văn học", path: "/products?category=Văn học" },
-              { name: "Kinh tế", path: "/products?category=Kinh tế" },
-              { name: "Kỹ năng sống", path: "/products?category=Kỹ năng sống" },
-              { name: "Thiếu nhi", path: "/products?category=Thiếu nhi" },
-              { name: "Ngoại ngữ", path: "/products?category=Ngoại ngữ" },
-            ].map((item, index) => (
-              <Link
-                key={index}
-                to={item.path}
-                className="text-sm font-medium text-gray-700 hover:text-red-600 transition-colors uppercase tracking-wide"
-              >
-                {item.name}
-              </Link>
-            ))}
-          </div>
-        </div>
-      </nav>
-
-      {/* 2. BANNER */}
+      {/* 1. BANNER */}
       <section className="relative h-[420px] overflow-hidden">
         {slides.map((slide, index) => (
           <div
@@ -241,7 +191,7 @@ const Home = () => {
                 <img 
                   src={slide.image} 
                   className="w-[380px] h-[320px] object-cover rounded-2xl shadow-2xl border-4 border-white/20"
-                  alt="Banner Book"
+                  alt="Banner Product"
                 />
               </div>
             </div>
@@ -251,20 +201,18 @@ const Home = () => {
         <button onClick={() => setCurrentSlide((prev) => (prev + 1) % slides.length)} className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-white/20 p-2 rounded-full text-white hover:bg-white/40"><FaChevronRight size={20}/></button>
       </section>
 
-      {/* 3. MAIN CONTENT */}
+      {/* 2. MAIN CONTENT */}
       <main className="container mx-auto px-4 py-8">
         <div className="text-center pt-4 pb-8">
-          <h1 className="text-3xl font-black text-gray-800 mb-1 uppercase tracking-tight">Sách Hay Chính Hãng</h1>
+          <h1 className="text-3xl font-black text-gray-800 mb-1 uppercase tracking-tight">Sản Phẩm Chính Hãng</h1>
           <p className="text-sm text-gray-400 font-semibold tracking-wide">Tìm thấy {featuredProducts.length + newProducts.length} sản phẩm</p>
         </div>
 
-        <FilterBar />
-
-        {/* SÁCH NỔI BẬT */}
+        {/* SẢN PHẨM NỔI BẬT */}
         <section className="mb-12">
           <div className="flex items-center justify-between mb-6 border-b-2 border-red-500 pb-2">
             <h2 className="text-xl font-black text-gray-800 flex items-center gap-2 uppercase tracking-wide">
-              <FaFire className="text-red-500" /> SÁCH NỔI BẬT
+              <FaFire className="text-red-500" /> SẢN PHẨM NỔI BẬT
             </h2>
             <Link to="/products" className="text-blue-500 text-xs font-bold hover:underline">XEM TẤT CẢ →</Link>
           </div>
@@ -273,11 +221,11 @@ const Home = () => {
           </div>
         </section>
 
-        {/* SÁCH MỚI NHẤT */}
+        {/* SẢN PHẨM MỚI NHẤT */}
         <section>
           <div className="flex items-center justify-between mb-6 border-b-2 border-blue-500 pb-2">
             <h2 className="text-xl font-black text-gray-800 flex items-center gap-2 uppercase tracking-wide">
-              <FaBook className="text-blue-500" /> SÁCH MỚI NHẤT
+              <FaBook className="text-blue-500" /> SẢN PHẨM MỚI NHẤT
             </h2>
             <Link to="/products" className="text-blue-500 text-xs font-bold hover:underline">XEM TẤT CẢ →</Link>
           </div>
@@ -322,7 +270,7 @@ const Home = () => {
             </div>
           </div>
           <div className="border-t border-gray-800 pt-8 text-center text-xs text-gray-500">
-            <p>© 2024 BookStore.vn - Sách hay chính hãng</p>
+            <p>© 2024 SMART.vn - Sản phẩm chính hãng</p>
           </div>
         </div>
       </footer>

@@ -101,4 +101,43 @@ const getOrderById = async (req, res) => {
   }
 };
 
-export { addOrderItems, getMyOrders, getOrders, updateOrderToDelivered, getOrderById };
+// @desc    Hủy đơn hàng
+// @route   DELETE /api/orders/:id
+// @access  Private (User hoặc Admin)
+const cancelOrder = async (req, res) => {
+  const order = await Order.findById(req.params.id);
+
+  if (!order) {
+    res.status(404);
+    throw new Error('Không tìm thấy đơn hàng');
+  }
+
+  // Kiểm tra quyền: User phải là chủ đơn hàng hoặc Admin
+  if (!req.user.isAdmin && !order.user.equals(req.user._id)) {
+    res.status(401);
+    throw new Error('Không có quyền hủy đơn hàng này');
+  }
+
+  // Chỉ cho phép hủy đơn hàng nếu chưa giao hàng
+  if (order.isDelivered) {
+    res.status(400);
+    throw new Error('Không thể hủy đơn hàng đã được giao');
+  }
+
+  // Chỉ cho phép hủy nếu đơn hàng chưa bị hủy
+  if (order.orderStatus === 'Đã hủy') {
+    res.status(400);
+    throw new Error('Đơn hàng đã được hủy trước đó');
+  }
+
+  // Cập nhật trạng thái đơn hàng thành "Đã hủy"
+  order.orderStatus = 'Đã hủy';
+  const updatedOrder = await order.save();
+
+  res.json({
+    message: 'Đơn hàng đã được hủy thành công',
+    order: updatedOrder,
+  });
+};
+
+export { addOrderItems, getMyOrders, getOrders, updateOrderToDelivered, getOrderById, cancelOrder };

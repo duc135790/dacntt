@@ -42,7 +42,6 @@ if (!process.env.MONGO_URI) {
 //import các routes
 import productRoutes from './routes/productRoutes.js';
 import customerRoutes from './routes/customerRoutes.js';
-import staffRoutes from './routes/staffRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
 import voucherRoutes from './routes/voucherRoutes.js';
 
@@ -78,8 +77,6 @@ app.use('/api/products', productRoutes);
 console.log('  ✅ /api/products registered');
 app.use('/api/customers', customerRoutes);
 console.log('  ✅ /api/customers registered');
-app.use('/api/staff', staffRoutes);
-console.log('  ✅ /api/staff registered');
 app.use('/api/orders', orderRoutes);
 console.log('  ✅ /api/orders registered');
 app.use('/api/vouchers', voucherRoutes);

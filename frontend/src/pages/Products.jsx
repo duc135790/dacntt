@@ -79,14 +79,14 @@ const Products = () => {
       <div className="bg-white">
         <div className="container mx-auto px-4 py-4">
           <div className="text-sm text-gray-600">
-            <Link to="/" className="hover:text-red-600">Trang chủ</Link> / <span>Tất cả sản phẩm</span>
+            <Link to="/" className="hover:text-red-600">Trang chủ</Link> / <span>Sản phẩm</span>
           </div>
         </div>
       </div>
 
       {/* Page Title */}
       <div className="text-center py-8 bg-white mb-5">
-        <h1 className="text-4xl font-bold text-gray-800 mb-2">Sách Hay Chính Hãng</h1>
+        <h1 className="text-4xl font-bold text-gray-800 mb-2">Sản Phẩm Chính Hãng</h1>
         <p className="text-gray-600">Tìm thấy {products.length} sản phẩm</p>
       </div>
 
@@ -95,19 +95,21 @@ const Products = () => {
         <div className="bg-white p-5 rounded-lg mb-5 border border-gray-200 shadow-sm">
           <div className="flex flex-wrap gap-4 items-center">
             <div className="flex items-center gap-3">
-              <label className="text-sm font-semibold text-gray-700">Thể loại:</label>
+              <label className="text-sm font-semibold text-gray-700">Danh mục:</label>
               <select
                 value={filter}
                 onChange={(e) => handleFilterChange(e.target.value)}
                 className="border-2 border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
               >
                 <option value="">Tất cả</option>
-                <option value="Văn học">Văn học</option>
-                <option value="Kinh tế">Kinh tế</option>
-                <option value="Kỹ năng sống">Kỹ năng sống</option>
-                <option value="Thiếu nhi">Thiếu nhi</option>
-                <option value="Giáo khoa">Giáo khoa</option>
-                <option value="Ngoại ngữ">Ngoại ngữ</option>
+                <option value="Quần áo">Quần áo</option>
+                <option value="Phụ kiện">Phụ kiện</option>
+                <option value="Đồ điện tử">Đồ điện tử</option>
+                <option value="Giày dép">Giày dép</option>
+                <option value="Túi xách">Túi xách</option>
+                <option value="Đồng hồ">Đồng hồ</option>
+                <option value="Mỹ phẩm">Mỹ phẩm</option>
+                <option value="Khác">Khác</option>
               </select>
             </div>
 

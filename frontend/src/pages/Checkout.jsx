@@ -215,7 +215,7 @@ const Checkout = () => {
             
             <h2 className="text-3xl font-bold text-gray-800 mb-3">🎉 Đặt hàng thành công!</h2>
             <p className="text-gray-600 text-lg">
-              Cảm ơn bạn đã tin tưởng BookStore.
+              Cảm ơn bạn đã tin tưởng SMART.
             </p>
           </div>
 

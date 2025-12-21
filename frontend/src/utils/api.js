@@ -61,6 +61,7 @@ export const authAPI = {
   login: (credentials) => api.post('/customers/login', credentials),
   register: (userData) => api.post('/customers', userData),
   getProfile: () => api.get('/customers/profile'),
+  updateProfile: (userData) => api.put('/customers/profile', userData),
 };
 
 // Products API

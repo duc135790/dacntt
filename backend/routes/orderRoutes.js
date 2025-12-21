@@ -1,6 +1,6 @@
 import express from 'express';
 const router = express.Router();
-import { addOrderItems, getMyOrders, getOrders, updateOrderToDelivered, getOrderById} from '../controllers/orderController.js';
+import { addOrderItems, getMyOrders, getOrders, updateOrderToDelivered, getOrderById, cancelOrder} from '../controllers/orderController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 //route cua admin
 router
@@ -10,8 +10,14 @@ router
   
 //route cua user
 router.get('/myorders', protect, getMyOrders);
-//route chung(co bao mat ben trong)
-router.get('/:id', protect, getOrderById);
-//route cap nhat cau admin
+
+//route cap nhat cau admin (phai dat truoc /:id)
 router.put('/:id/deliver', protect, admin, updateOrderToDelivered);
+
+//route huy don hang (phai dat truoc /:id de tranh xung dot)
+router.delete('/:id', protect, cancelOrder);
+
+//route chung(co bao mat ben trong) - dat cuoi cung
+router.get('/:id', protect, getOrderById);
+
 export default router;

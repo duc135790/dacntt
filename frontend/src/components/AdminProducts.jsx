@@ -19,6 +19,8 @@ const AdminProducts = () => {
       publisher: '',
       pages: '',
     },
+    publicationYear: '',
+    language: 'Tiếng Việt',
   });
 
   useEffect(() => {
@@ -28,9 +30,12 @@ const AdminProducts = () => {
   const fetchProducts = async () => {
     try {
       const response = await productsAPI.getAllProducts();
-      setProducts(response.data);
+      // API trả về { success, count, products } hoặc array trực tiếp
+      const productsData = response.data.products || response.data || [];
+      setProducts(Array.isArray(productsData) ? productsData : []);
     } catch (error) {
       console.error('Error fetching products:', error);
+      setProducts([]); // Đảm bảo products luôn là array
     } finally {
       setLoading(false);
     }
@@ -77,6 +82,8 @@ const AdminProducts = () => {
           publisher: '',
           pages: '',
         },
+        publicationYear: '',
+        language: 'Tiếng Việt',
       });
       fetchProducts();
     } catch (error) {
@@ -88,29 +95,31 @@ const AdminProducts = () => {
     setEditingProduct(product);
     setFormData({
       name: product.name,
-      brand: product.brand,
+      brand: product.brand || product.category,
       price: product.price,
       description: product.description || '',
-      stock: product.stock,
+      stock: product.stock || product.countInStock || '',
       image: product.image || '',
       specs: product.specs || {
         author: '',
         publisher: '',
         pages: '',
       },
+      publicationYear: product.publicationYear || product.specs?.publicationYear || '',
+      language: product.language || 'Tiếng Việt',
     });
     setShowModal(true);
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa sách này?')) {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')) {
       return;
     }
     try {
       await productsAPI.deleteProduct(id);
       fetchProducts();
     } catch (error) {
-      alert(error.response?.data?.message || 'Xóa sách thất bại');
+      alert(error.response?.data?.message || 'Xóa sản phẩm thất bại');
     }
   };
 
@@ -130,7 +139,7 @@ const AdminProducts = () => {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-semibold">Danh sách sách</h2>
+        <h2 className="text-xl font-bold">Danh sách sản phẩm</h2>
         <button
           onClick={() => {
             setEditingProduct(null);
@@ -146,13 +155,15 @@ const AdminProducts = () => {
                 publisher: '',
                 pages: '',
               },
+              publicationYear: '',
+              language: 'Tiếng Việt',
             });
             setShowModal(true);
           }}
-          className="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700 flex items-center space-x-2"
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
         >
           <FaPlus />
-          <span>Thêm sách mới</span>
+          <span>Thêm sản phẩm</span>
         </button>
       </div>
       <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -160,19 +171,16 @@ const AdminProducts = () => {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Sách
+                Sản phẩm
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Thể loại
+                Danh mục
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                 Giá
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Kho
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Trạng thái
+                Tồn kho
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                 Thao tác
@@ -180,7 +188,7 @@ const AdminProducts = () => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {products.map((product) => (
+            {Array.isArray(products) && products.length > 0 ? products.map((product) => (
               <tr key={product._id}>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
@@ -200,39 +208,35 @@ const AdminProducts = () => {
                     </div>
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">{product.brand}</td>
+                <td className="px-6 py-4 whitespace-nowrap">{product.brand || product.category}</td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   {product.price.toLocaleString()} ₫
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">{product.stock}</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <button
-                    onClick={() => handleToggleStock(product._id, product.inStock)}
-                    className={`px-3 py-1 rounded-full text-sm ${
-                      product.inStock
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}
-                  >
-                    {product.inStock ? 'Còn hàng' : 'Hết hàng'}
-                  </button>
-                </td>
+                <td className="px-6 py-4 whitespace-nowrap">{product.stock || product.countInStock || 0}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                   <button
                     onClick={() => handleEdit(product)}
-                    className="text-orange-600 hover:text-orange-900"
+                    className="text-blue-600 hover:text-blue-900"
+                    title="Chỉnh sửa"
                   >
                     <FaEdit />
                   </button>
                   <button
                     onClick={() => handleDelete(product._id)}
-                    className="text-red-600 hover:text-red-900"
+                    className="text-red-600 hover:text-red-900 ml-2"
+                    title="Xóa"
                   >
                     <FaTrash />
                   </button>
                 </td>
               </tr>
-            ))}
+            )) : (
+              <tr>
+                <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
+                  Không có sản phẩm nào
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -240,46 +244,50 @@ const AdminProducts = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
           <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <h3 className="text-xl font-bold mb-4">
-              {editingProduct ? 'Chỉnh sửa sách' : 'Thêm sách mới'}
+              {editingProduct ? 'Chỉnh sửa sản phẩm' : 'Thêm sản phẩm mới'}
             </h3>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Tên sách
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  required
-                  className="w-full border border-gray-300 rounded-md px-3 py-2"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Danh mục
-                </label>
-                <select
-                  name="brand"
-                  value={formData.brand}
-                  onChange={handleChange}
-                  required
-                  className="w-full border border-gray-300 rounded-md px-3 py-2"
-                >
-                  <option value="">Chọn danh mục</option>
-                  <option value="Văn học">Văn học</option>
-                  <option value="Kinh tế">Kinh tế</option>
-                  <option value="Kỹ năng sống">Kỹ năng sống</option>
-                  <option value="Thiếu nhi">Thiếu nhi</option>
-                  <option value="Giáo khoa">Giáo khoa</option>
-                  <option value="Ngoại ngữ">Ngoại ngữ</option>
-                </select>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Tên sản phẩm *
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    required
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Danh mục *
+                  </label>
+                  <select
+                    name="brand"
+                    value={formData.brand}
+                    onChange={handleChange}
+                    required
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  >
+                    <option value="">Chọn danh mục</option>
+                    <option value="Quần áo">Quần áo</option>
+                    <option value="Phụ kiện">Phụ kiện</option>
+                    <option value="Đồ điện tử">Đồ điện tử</option>
+                    <option value="Giày dép">Giày dép</option>
+                    <option value="Túi xách">Túi xách</option>
+                    <option value="Đồng hồ">Đồng hồ</option>
+                    <option value="Mỹ phẩm">Mỹ phẩm</option>
+                    <option value="Khác">Khác</option>
+                  </select>
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Giá (₫)
+                    Giá (₫) *
                   </label>
                   <input
                     type="number"
@@ -293,7 +301,7 @@ const AdminProducts = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Số lượng
+                    Tồn kho *
                   </label>
                   <input
                     type="number"
@@ -330,54 +338,74 @@ const AdminProducts = () => {
                   className="w-full border border-gray-300 rounded-md px-3 py-2"
                 />
               </div>
-              <div className="border-t pt-4">
-                <h4 className="font-semibold mb-3">Thông tin chi tiết</h4>
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Tác giả
-                    </label>
-                    <input
-                      type="text"
-                      name="specs.author"
-                      value={formData.specs.author}
-                      onChange={handleChange}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2"
-                      placeholder="VD: Nguyễn Nhật Ánh"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Nhà xuất bản
-                    </label>
-                    <input
-                      type="text"
-                      name="specs.publisher"
-                      value={formData.specs.publisher}
-                      onChange={handleChange}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2"
-                      placeholder="VD: NXB Trẻ"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Số trang
-                    </label>
-                    <input
-                      type="text"
-                      name="specs.pages"
-                      value={formData.specs.pages}
-                      onChange={handleChange}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2"
-                      placeholder="VD: 300"
-                    />
-                  </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Tác giả
+                  </label>
+                  <input
+                    type="text"
+                    name="specs.author"
+                    value={formData.specs.author}
+                    onChange={handleChange}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Nhà xuất bản
+                  </label>
+                  <input
+                    type="text"
+                    name="specs.publisher"
+                    value={formData.specs.publisher}
+                    onChange={handleChange}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Năm XB
+                  </label>
+                  <input
+                    type="number"
+                    name="publicationYear"
+                    value={formData.publicationYear}
+                    onChange={handleChange}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Số trang
+                  </label>
+                  <input
+                    type="text"
+                    name="specs.pages"
+                    value={formData.specs.pages}
+                    onChange={handleChange}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Ngôn ngữ
+                  </label>
+                  <input
+                    type="text"
+                    name="language"
+                    value={formData.language}
+                    onChange={handleChange}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  />
                 </div>
               </div>
               <div className="flex space-x-2">
                 <button
                   type="submit"
-                  className="flex-1 bg-orange-600 text-white py-2 rounded hover:bg-orange-700"
+                  className="flex-1 bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
                 >
                   {editingProduct ? 'Cập nhật' : 'Thêm'}
                 </button>

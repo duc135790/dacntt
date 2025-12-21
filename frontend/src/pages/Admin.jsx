@@ -1,49 +1,32 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { productsAPI, ordersAPI } from '../utils/api';
-import { FaCog, FaBook, FaBoxOpen, FaLock, FaPlus, FaEdit, FaEye, FaCheckCircle, FaClock, FaTruck } from 'react-icons/fa';
+import { ordersAPI, productsAPI } from '../utils/api';
+import AdminProducts from '../components/AdminProducts';
+import { FaCog, FaBook, FaBoxOpen, FaLock } from 'react-icons/fa';
 
 const Admin = () => {
   const { user, loading } = useAuth();
   const [activeTab, setActiveTab] = useState('products');
-  const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
-  const [loadingData, setLoadingData] = useState(false);
-  const [showProductModal, setShowProductModal] = useState(false);
-  const [editingProduct, setEditingProduct] = useState(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    price: '',
-    category: '',
-    description: '',
-    countInStock: '',
-    image: '',
-    author: '',
-    publisher: '',
-    publicationYear: '',
-    pageCount: '',
-    language: 'Tiếng Việt'
-  });
+  const [productsCount, setProductsCount] = useState(0);
 
   useEffect(() => {
     if (user) {
-      fetchProducts();
       fetchOrders();
+      fetchProductsCount();
     }
   }, [user]);
 
-  const fetchProducts = async () => {
+  const fetchProductsCount = async () => {
     try {
-      setLoadingData(true);
-      const response = await productsAPI.getProducts();
-      setProducts(response.data);
+      const response = await productsAPI.getAllProducts();
+      setProductsCount(response.data.length);
     } catch (error) {
-      console.error('Error fetching products:', error);
-    } finally {
-      setLoadingData(false);
+      console.error('Error fetching products count:', error);
     }
   };
+
 
   const fetchOrders = async () => {
     try {
@@ -52,63 +35,6 @@ const Admin = () => {
     } catch (error) {
       console.error('Error fetching orders:', error);
     }
-  };
-
-  const handleInputChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmitProduct = async (e) => {
-    e.preventDefault();
-    try {
-      if (editingProduct) {
-        await productsAPI.updateProduct(editingProduct._id, formData);
-        alert('✅ Cập nhật sản phẩm thành công!');
-      } else {
-        await productsAPI.createProduct(formData);
-        alert('✅ Thêm sản phẩm thành công!');
-      }
-      setShowProductModal(false);
-      setEditingProduct(null);
-      resetForm();
-      fetchProducts();
-    } catch (error) {
-      alert('❌ Lỗi: ' + (error.response?.data?.message || error.message));
-    }
-  };
-
-  const handleEditProduct = (product) => {
-    setEditingProduct(product);
-    setFormData({
-      name: product.name,
-      price: product.price,
-      category: product.category || product.brand,
-      description: product.description || '',
-      countInStock: product.countInStock || product.stock,
-      image: product.image || '',
-      author: product.author || '',
-      publisher: product.publisher || '',
-      publicationYear: product.publicationYear || '',
-      pageCount: product.pageCount || '',
-      language: product.language || 'Tiếng Việt'
-    });
-    setShowProductModal(true);
-  };
-
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      price: '',
-      category: '',
-      description: '',
-      countInStock: '',
-      image: '',
-      author: '',
-      publisher: '',
-      publicationYear: '',
-      pageCount: '',
-      language: 'Tiếng Việt'
-    });
   };
 
   const handleUpdateOrderStatus = async (orderId, newStatus) => {
@@ -160,6 +86,23 @@ const Admin = () => {
     );
   }
 
+  if (!user.isAdmin) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="container mx-auto px-4 py-20">
+          <div className="max-w-md mx-auto text-center py-20 bg-white rounded-lg shadow">
+            <FaLock className="text-6xl text-red-300 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Không có quyền truy cập</h2>
+            <p className="text-gray-600 mb-6">Chỉ quản trị viên mới có thể truy cập trang này</p>
+            <Link to="/" className="inline-block bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
+              Về trang chủ
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
@@ -181,7 +124,7 @@ const Admin = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-500 text-sm mb-1">Tổng sản phẩm</p>
-                <p className="text-3xl font-bold text-gray-800">{products.length}</p>
+                <p className="text-3xl font-bold text-gray-800">{productsCount}</p>
               </div>
               <FaBook className="text-5xl text-blue-500 opacity-50" />
             </div>
@@ -237,77 +180,7 @@ const Admin = () => {
 
           {/* Content */}
           <div className="p-6">
-            {activeTab === 'products' && (
-              <div>
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-bold">Danh sách sản phẩm</h2>
-                  <button
-                    onClick={() => {
-                      setEditingProduct(null);
-                      resetForm();
-                      setShowProductModal(true);
-                    }}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-                  >
-                    <FaPlus /> Thêm sản phẩm
-                  </button>
-                </div>
-
-                {loadingData ? (
-                  <div className="text-center py-12">
-                    <div className="spinner mx-auto mb-4"></div>
-                    <p className="text-gray-600">Đang tải...</p>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sách</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Thể loại</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Giá</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tồn kho</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Thao tác</th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {products.map((product) => (
-                          <tr key={product._id} className="hover:bg-gray-50">
-                            <td className="px-4 py-4 whitespace-nowrap">
-                              <div className="flex items-center">
-                                <img src={product.image} alt={product.name} className="h-12 w-12 rounded object-cover" />
-                                <div className="ml-4">
-                                  <div className="text-sm font-medium text-gray-900">{product.name}</div>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-4 py-4 whitespace-nowrap text-sm">{product.category || product.brand}</td>
-                            <td className="px-4 py-4 whitespace-nowrap text-sm font-semibold text-red-600">
-                              {product.price.toLocaleString()}₫
-                            </td>
-                            <td className="px-4 py-4 whitespace-nowrap">
-                              <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                                (product.countInStock || product.stock) > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                              }`}>
-                                {product.countInStock || product.stock}
-                              </span>
-                            </td>
-                            <td className="px-4 py-4 whitespace-nowrap text-sm space-x-2">
-                              <button
-                                onClick={() => handleEditProduct(product)}
-                                className="text-blue-600 hover:text-blue-900"
-                              >
-                                <FaEdit />
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            )}
+            {activeTab === 'products' && <AdminProducts />}
 
             {activeTab === 'orders' && (
               <div>
@@ -367,90 +240,6 @@ const Admin = () => {
         </div>
       </div>
 
-      {/* Product Modal */}
-      {showProductModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <h3 className="text-xl font-bold mb-4">{editingProduct ? 'Chỉnh sửa sản phẩm' : 'Thêm sản phẩm mới'}</h3>
-            <form onSubmit={handleSubmitProduct} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Tên sách *</label>
-                  <input type="text" name="name" value={formData.name} onChange={handleInputChange} required className="w-full border border-gray-300 rounded px-3 py-2" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Thể loại *</label>
-                  <select name="category" value={formData.category} onChange={handleInputChange} required className="w-full border border-gray-300 rounded px-3 py-2">
-                    <option value="">Chọn thể loại</option>
-                    <option value="Văn học">Văn học</option>
-                    <option value="Kinh tế">Kinh tế</option>
-                    <option value="Kỹ năng sống">Kỹ năng sống</option>
-                    <option value="Thiếu nhi">Thiếu nhi</option>
-                    <option value="Giáo khoa">Giáo khoa</option>
-                    <option value="Ngoại ngữ">Ngoại ngữ</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Giá (₫) *</label>
-                  <input type="number" name="price" value={formData.price} onChange={handleInputChange} required min="0" className="w-full border border-gray-300 rounded px-3 py-2" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Tồn kho *</label>
-                  <input type="number" name="countInStock" value={formData.countInStock} onChange={handleInputChange} required min="0" className="w-full border border-gray-300 rounded px-3 py-2" />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">Mô tả</label>
-                <textarea name="description" value={formData.description} onChange={handleInputChange} rows="3" className="w-full border border-gray-300 rounded px-3 py-2"></textarea>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">URL hình ảnh</label>
-                <input type="url" name="image" value={formData.image} onChange={handleInputChange} className="w-full border border-gray-300 rounded px-3 py-2" />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Tác giả</label>
-                  <input type="text" name="author" value={formData.author} onChange={handleInputChange} className="w-full border border-gray-300 rounded px-3 py-2" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Nhà xuất bản</label>
-                  <input type="text" name="publisher" value={formData.publisher} onChange={handleInputChange} className="w-full border border-gray-300 rounded px-3 py-2" />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Năm XB</label>
-                  <input type="number" name="publicationYear" value={formData.publicationYear} onChange={handleInputChange} className="w-full border border-gray-300 rounded px-3 py-2" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Số trang</label>
-                  <input type="number" name="pageCount" value={formData.pageCount} onChange={handleInputChange} className="w-full border border-gray-300 rounded px-3 py-2" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Ngôn ngữ</label>
-                  <input type="text" name="language" value={formData.language} onChange={handleInputChange} className="w-full border border-gray-300 rounded px-3 py-2" />
-                </div>
-              </div>
-
-              <div className="flex gap-2 pt-4">
-                <button type="submit" className="flex-1 bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
-                  {editingProduct ? 'Cập nhật' : 'Thêm'}
-                </button>
-                <button type="button" onClick={() => { setShowProductModal(false); setEditingProduct(null); resetForm(); }} className="flex-1 bg-gray-300 text-gray-700 py-2 rounded hover:bg-gray-400">
-                  Hủy
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

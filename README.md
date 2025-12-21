@@ -1,4 +1,0 @@
-# web
-...
-# DACNTT
-# DACNTT

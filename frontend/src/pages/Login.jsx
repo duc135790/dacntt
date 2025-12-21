@@ -39,8 +39,7 @@ const Login = () => {
         {/* Logo */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-2 text-3xl font-bold mb-2">
-            <span className="text-gray-800">BOOK</span>
-            <span className="text-red-600">STORE</span>
+            <span className="text-gray-800">SMART</span>
           </Link>
           <p className="text-gray-600">Đăng nhập để tiếp tục</p>
         </div>
