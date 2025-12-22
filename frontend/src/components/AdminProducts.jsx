@@ -162,12 +162,6 @@ const AdminProducts = ({ onProductsChange }) => {
               description: '',
               stock: '',
               image: '',
-              specs: {
-                author: '',
-                publisher: '',
-                pages: '',
-              },
-              publicationYear: '',
               language: 'Tiếng Việt',
             });
             setShowModal(true);

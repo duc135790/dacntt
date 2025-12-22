@@ -8,7 +8,6 @@ import {
     updateProduct,
     deleteProduct,
     updateProductStock,
-    createProductReview,
 } from '../controllers/productController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 
@@ -25,8 +24,5 @@ router.post('/', protect, admin, createProduct);                  // POST /api/p
 router.put('/:id', protect, admin, updateProduct);                // PUT /api/products/:id
 router.put('/:id/stock', protect, admin, updateProductStock);     // PUT /api/products/:id/stock
 router.delete('/:id', protect, admin, deleteProduct);             // DELETE /api/products/:id
-
-// Review route (User cần đăng nhập)
-router.post('/:id/reviews', protect, createProductReview);        // POST /api/products/:id/reviews
 
 export default router;

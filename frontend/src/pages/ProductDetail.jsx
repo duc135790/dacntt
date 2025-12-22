@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { productsAPI, cartAPI } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
-import { FaBook, FaShoppingCart, FaArrowLeft, FaCheckCircle, FaExclamationCircle, FaUser, FaBuilding, FaFileAlt, FaGlobe } from 'react-icons/fa';
+import { FaBook, FaShoppingCart, FaArrowLeft, FaCheckCircle, FaExclamationCircle, FaGlobe } from 'react-icons/fa';
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -217,36 +217,6 @@ const ProductDetail = () => {
           <div className="p-6">
             <table className="w-full">
               <tbody className="divide-y">
-                {product.author && (
-                  <tr>
-                    <td className="py-3 text-gray-600 font-medium flex items-center gap-2">
-                      <FaUser className="text-blue-600" /> Tác giả
-                    </td>
-                    <td className="py-3 text-gray-800">{product.author}</td>
-                  </tr>
-                )}
-                {product.publisher && (
-                  <tr>
-                    <td className="py-3 text-gray-600 font-medium flex items-center gap-2">
-                      <FaBuilding className="text-green-600" /> Nhà xuất bản
-                    </td>
-                    <td className="py-3 text-gray-800">{product.publisher}</td>
-                  </tr>
-                )}
-                {product.publicationYear && (
-                  <tr>
-                    <td className="py-3 text-gray-600 font-medium">Năm xuất bản</td>
-                    <td className="py-3 text-gray-800">{product.publicationYear}</td>
-                  </tr>
-                )}
-                {product.pageCount && (
-                  <tr>
-                    <td className="py-3 text-gray-600 font-medium flex items-center gap-2">
-                      <FaFileAlt className="text-orange-600" /> Số trang
-                    </td>
-                    <td className="py-3 text-gray-800">{product.pageCount} trang</td>
-                  </tr>
-                )}
                 {product.language && (
                   <tr>
                     <td className="py-3 text-gray-600 font-medium flex items-center gap-2">

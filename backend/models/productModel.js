@@ -1,47 +1,18 @@
 import mongoose from "mongoose";
-const reviewSchema = mongoose.Schema(
-    {
-        name: { type: String, required: true }, // Tên người bình luận
-        rating: { type: Number, required: true },
-        comment: { type: String, required: true },
-        user: {
-            type: mongoose.Schema.Types.ObjectId,
-            required: true,
-            ref: 'Customer', // Tham chiếu đến bảng Customer
-        },
-    },
-    {
-        timestamps: true,
-    }
-);
+
 const productSchema = mongoose.Schema(
     {
-        name: { type: String, required: true }, // Tên sách
-        image: { type: String, required: true }, // Ảnh bìa sách
-        author: { type: String, required: false }, // Tác giả (Nguyễn Nhật Ánh, J.K. Rowling...)
-        
-        category: { type: String, required: true }, // Thể loại (Văn học, Kinh tế, Thiếu nhi...)
-        description: { type: String, required: true }, // Tóm tắt nội dung
-        publisher: { type: String, required: false }, // Nhà xuất bản (NXB Trẻ, Kim Đồng...)
-        publicationYear: { type: Number }, // Năm xuất bản
-        pageCount: { type: Number }, // Số trang
+        name: { type: String, required: true }, // Tên sản phẩm
+        image: { type: String, required: true }, // Ảnh sản phẩm
+        category: { type: String, required: true }, // Danh mục
+        description: { type: String, required: true }, // Mô tả sản phẩm
         language: { type: String, default: 'Tiếng Việt' }, // Ngôn ngữ
         
         price: { type: Number, required: true, default: 0 },
         
         //trường tồn kho
         countInStock: { type: Number, required: true, default: 0 },
-        reviews: [reviewSchema],
-        rating: {
-            type: Number,
-            required: true,
-            default: 0,
-        },
-        numReviews: {
-            type: Number,
-            required: true,
-            default: 0,
-        },
+        
         // SEO
         metaTitle: { type: String },
         metaDescription: { type: String },
