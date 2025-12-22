@@ -1,16 +1,18 @@
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import mongoose from 'mongoose';
-import bcrypt from 'bcryptjs';
+import mongoose from 'mongoose';  // ✅ Phải có dòng này
+import bcrypt from 'bcryptjs';     // ✅ Phải có dòng này
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-dotenv.config();
+// Load .env từ thư mục cha
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 console.log('MONGO_URI:', process.env.MONGO_URI ? '✅ Loaded' : '❌ Not found');
 
+// Tiếp tục phần connectDB...
 const connectDB = async () => {
   try {
     if (!process.env.MONGO_URI) {
