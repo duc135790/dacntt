@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { productsAPI } from '../utils/api';
 import { FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
 
-const AdminProducts = () => {
+const AdminProducts = ({ onProductsChange }) => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -14,12 +14,6 @@ const AdminProducts = () => {
     description: '',
     stock: '',
     image: '',
-    specs: {
-      author: '',
-      publisher: '',
-      pages: '',
-    },
-    publicationYear: '',
     language: 'Tiếng Việt',
   });
 
@@ -43,21 +37,10 @@ const AdminProducts = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    if (name.startsWith('specs.')) {
-      const specKey = name.split('.')[1];
-      setFormData({
-        ...formData,
-        specs: {
-          ...formData.specs,
-          [specKey]: value,
-        },
-      });
-    } else {
-      setFormData({
-        ...formData,
-        [name]: value,
-      });
-    }
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -77,15 +60,13 @@ const AdminProducts = () => {
         description: '',
         stock: '',
         image: '',
-        specs: {
-          author: '',
-          publisher: '',
-          pages: '',
-        },
-        publicationYear: '',
         language: 'Tiếng Việt',
       });
       fetchProducts();
+      // Cập nhật tổng số sản phẩm ở trang Admin
+      if (onProductsChange) {
+        onProductsChange();
+      }
     } catch (error) {
       alert(error.response?.data?.message || 'Có lỗi xảy ra');
     }
@@ -100,12 +81,6 @@ const AdminProducts = () => {
       description: product.description || '',
       stock: product.stock || product.countInStock || '',
       image: product.image || '',
-      specs: product.specs || {
-        author: '',
-        publisher: '',
-        pages: '',
-      },
-      publicationYear: product.publicationYear || product.specs?.publicationYear || '',
       language: product.language || 'Tiếng Việt',
     });
     setShowModal(true);
@@ -118,6 +93,10 @@ const AdminProducts = () => {
     try {
       await productsAPI.deleteProduct(id);
       fetchProducts();
+      // Cập nhật tổng số sản phẩm ở trang Admin
+      if (onProductsChange) {
+        onProductsChange();
+      }
     } catch (error) {
       alert(error.response?.data?.message || 'Xóa sản phẩm thất bại');
     }
@@ -338,69 +317,17 @@ const AdminProducts = () => {
                   className="w-full border border-gray-300 rounded-md px-3 py-2"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Tác giả
-                  </label>
-                  <input
-                    type="text"
-                    name="specs.author"
-                    value={formData.specs.author}
-                    onChange={handleChange}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Nhà xuất bản
-                  </label>
-                  <input
-                    type="text"
-                    name="specs.publisher"
-                    value={formData.specs.publisher}
-                    onChange={handleChange}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Năm XB
-                  </label>
-                  <input
-                    type="number"
-                    name="publicationYear"
-                    value={formData.publicationYear}
-                    onChange={handleChange}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Số trang
-                  </label>
-                  <input
-                    type="text"
-                    name="specs.pages"
-                    value={formData.specs.pages}
-                    onChange={handleChange}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Ngôn ngữ
-                  </label>
-                  <input
-                    type="text"
-                    name="language"
-                    value={formData.language}
-                    onChange={handleChange}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2"
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Ngôn ngữ
+                </label>
+                <input
+                  type="text"
+                  name="language"
+                  value={formData.language}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2"
+                />
               </div>
               <div className="flex space-x-2">
                 <button

@@ -13,6 +13,7 @@
 
 import Order from '../models/orderModel.js';
 import Customer from '../models/customerModel.js';
+import Product from '../models/productModel.js';
 
 // Import Design Patterns
 import { ProductFactoryProducer } from '../patterns/AbstractFactory.js';
@@ -48,6 +49,42 @@ const createOrderWithPatterns = async (req, res) => {
       return res.status(400).json({ 
         message: 'Không có sản phẩm nào trong giỏ hàng' 
       });
+    }
+
+    // 1.5. Kiểm tra và trừ số lượng tồn kho
+    console.log('\n📦 Step 1.5: Check and update product stock');
+    for (const item of cartItems) {
+      // cartItem lưu field 'product' là ObjectId tham chiếu Product
+      const product = await Product.findById(item.product);
+      
+      if (!product) {
+        return res.status(404).json({ 
+          message: 'Không tìm thấy sản phẩm trong giỏ hàng' 
+        });
+      }
+
+      console.log(`📦 Trước khi trừ - Sản phẩm: ${product.name}, Tồn kho: ${product.countInStock}, Số lượng mua: ${item.quantity}`);
+
+      // Kiểm tra số lượng tồn kho
+      if (product.countInStock < item.quantity) {
+        return res.status(400).json({ 
+          message: `Sản phẩm "${product.name}" chỉ còn ${product.countInStock} sản phẩm trong kho` 
+        });
+      }
+
+      // Trừ số lượng tồn kho bằng findByIdAndUpdate để đảm bảo atomic
+      const oldStock = product.countInStock;
+      const updatedProduct = await Product.findByIdAndUpdate(
+        item.product,
+        { $inc: { countInStock: -item.quantity } },
+        { new: true } // Trả về document đã được cập nhật
+      );
+      
+      if (!updatedProduct) {
+        return res.status(404).json({ message: `Không thể cập nhật số lượng sản phẩm "${product.name}"` });
+      }
+      
+      console.log(`✅ Sau khi trừ - Sản phẩm: ${updatedProduct.name}, Tồn kho cũ: ${oldStock}, Tồn kho mới: ${updatedProduct.countInStock}`);
     }
 
     // 2. ABSTRACT FACTORY PATTERN - Tạo products với factory
@@ -118,16 +155,27 @@ const createOrderWithPatterns = async (req, res) => {
 
     // 5. Create order in database
     console.log('\n💾 Step 5: Save order to database');
+    
+    // Đảm bảo orderItems có đầy đủ thông tin
+    const orderItems = cartItems.map(item => {
+      if (!item.name || !item.image || !item.price || !item.quantity || !item.product) {
+        throw new Error(`Thiếu thông tin sản phẩm trong giỏ hàng: ${JSON.stringify(item)}`);
+      }
+      return {
+        name: item.name,
+        quantity: Number(item.quantity),
+        image: item.image,
+        price: Number(item.price),
+        product: item.product, // ObjectId tham chiếu Product
+      };
+    });
+
     const order = new Order({
-      orderItems: cartItems.map(item => ({
-        ...item,
-        product: item.product,
-        _id: undefined
-      })),
+      orderItems,
       user: req.user._id,
       shippingAddress,
-      paymentMethod,
-      totalPrice,
+      paymentMethod: paymentMethod || 'COD',
+      totalPrice: Number(totalPrice) || 0,
       orderStatus: 'Đang xử lý',
       isPaid: paymentResult.status === 'PAID',
       paidAt: paymentResult.paidAt || null,

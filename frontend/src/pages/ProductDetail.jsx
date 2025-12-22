@@ -44,6 +44,8 @@ const ProductDetail = () => {
       await cartAPI.addToCart(id, quantity);
       setSuccess('Đã thêm vào giỏ hàng!');
       setTimeout(() => setSuccess(''), 3000);
+      // Refresh thông tin sản phẩm để cập nhật số lượng tồn kho
+      await fetchProduct();
     } catch (error) {
       setError(error.response?.data?.message || 'Thêm vào giỏ hàng thất bại');
     } finally {

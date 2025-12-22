@@ -19,6 +19,16 @@ const Products = () => {
     fetchProducts();
   }, [filter, keyword]);
 
+  // Tự động refresh khi quay lại trang (khi window focus)
+  useEffect(() => {
+    const handleFocus = () => {
+      fetchProducts();
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, []);
+
   const fetchProducts = async () => {
     try {
       setLoading(true);
@@ -56,6 +66,8 @@ const Products = () => {
     try {
       await cartAPI.addToCart(productId, 1);
       alert('✅ Đã thêm vào giỏ hàng!');
+      // Refresh danh sách sản phẩm để cập nhật số lượng tồn kho
+      await fetchProducts();
     } catch (error) {
       console.error('❌ Error adding to cart:', error);
       alert('❌ Thêm vào giỏ hàng thất bại: ' + (error.response?.data?.message || error.message));
@@ -88,7 +100,18 @@ const Products = () => {
 
       {/* Page Title */}
       <div className="text-center py-8 bg-white mb-5">
-        <h1 className="text-4xl font-bold text-gray-800 mb-2">Sản Phẩm Chính Hãng</h1>
+        <div className="flex items-center justify-center gap-4 mb-2">
+          <h1 className="text-4xl font-bold text-gray-800">Sản Phẩm Chính Hãng</h1>
+          <button
+            onClick={fetchProducts}
+            className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+            title="Làm mới danh sách"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
+        </div>
         <p className="text-gray-600">Tìm thấy {products.length} sản phẩm</p>
       </div>
 
@@ -201,7 +224,7 @@ const Products = () => {
                     </div>
                     
                     <div className={`text-xs mb-3 font-semibold ${isOutOfStock ? 'text-red-600' : product.countInStock < 10 ? 'text-orange-600' : 'text-green-600'}`}>
-                      {isOutOfStock ? '❌ Hết hàng' : `Còn: ${product.stock || product.countInStock} sản phẩm`}
+                      {isOutOfStock ? '❌ Hết hàng' : `Còn: ${product.countInStock || 0} sản phẩm`}
                       {!isOutOfStock && product.countInStock < 10 && ' ⚠️'}
                     </div>
 

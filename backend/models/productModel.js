@@ -18,11 +18,11 @@ const productSchema = mongoose.Schema(
     {
         name: { type: String, required: true }, // Tên sách
         image: { type: String, required: true }, // Ảnh bìa sách
-        author: { type: String, required: true }, // Tác giả (Nguyễn Nhật Ánh, J.K. Rowling...)
+        author: { type: String, required: false }, // Tác giả (Nguyễn Nhật Ánh, J.K. Rowling...)
         
         category: { type: String, required: true }, // Thể loại (Văn học, Kinh tế, Thiếu nhi...)
         description: { type: String, required: true }, // Tóm tắt nội dung
-        publisher: { type: String, required: true }, // Nhà xuất bản (NXB Trẻ, Kim Đồng...)
+        publisher: { type: String, required: false }, // Nhà xuất bản (NXB Trẻ, Kim Đồng...)
         publicationYear: { type: Number }, // Năm xuất bản
         pageCount: { type: Number }, // Số trang
         language: { type: String, default: 'Tiếng Việt' }, // Ngôn ngữ

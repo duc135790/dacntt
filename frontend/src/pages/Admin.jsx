@@ -21,7 +21,16 @@ const Admin = () => {
   const fetchProductsCount = async () => {
     try {
       const response = await productsAPI.getAllProducts();
-      setProductsCount(response.data.length);
+      // API trả về { success, count, products } hoặc array trực tiếp
+      if (response.data.count !== undefined) {
+        setProductsCount(response.data.count);
+      } else if (response.data.products) {
+        setProductsCount(response.data.products.length);
+      } else if (Array.isArray(response.data)) {
+        setProductsCount(response.data.length);
+      } else {
+        setProductsCount(0);
+      }
     } catch (error) {
       console.error('Error fetching products count:', error);
     }
@@ -180,7 +189,7 @@ const Admin = () => {
 
           {/* Content */}
           <div className="p-6">
-            {activeTab === 'products' && <AdminProducts />}
+            {activeTab === 'products' && <AdminProducts onProductsChange={fetchProductsCount} />}
 
             {activeTab === 'orders' && (
               <div>

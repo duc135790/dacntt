@@ -95,6 +95,7 @@ app.use((err, req, res, next) => {
   
   if (err.name === 'ValidationError') {
     const messages = Object.values(err.errors).map(e => e.message);
+    console.error('❌ Validation Error Details:', err.errors);
     return res.status(400).json({
       message: 'Dữ liệu không hợp lệ',
       errors: messages

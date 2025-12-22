@@ -47,17 +47,18 @@ const Home = () => {
     return () => clearInterval(interval);
   }, [slides.length]);
 
+  const fetchProducts = async () => {
+    try {
+      const { data } = await axios.get('http://localhost:5000/api/products');
+      setFeaturedProducts(data.slice(0, 4));
+      setNewProducts(data.slice(0, 8));
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const { data } = await axios.get('http://localhost:5000/api/products');
-        setFeaturedProducts(data.slice(0, 4));
-        setNewProducts(data.slice(0, 8));
-        setLoading(false);
-      } catch (error) {
-        setLoading(false);
-      }
-    };
     fetchProducts();
   }, []);
 
@@ -76,6 +77,8 @@ const Home = () => {
     try {
       await cartAPI.addToCart(productId, 1);
       alert('✅ Đã thêm vào giỏ hàng!');
+      // Refresh danh sách sản phẩm để cập nhật số lượng tồn kho
+      await fetchProducts();
     } catch (error) {
       console.error('❌ Error adding to cart:', error);
       alert('❌ Thêm vào giỏ hàng thất bại: ' + (error.response?.data?.message || error.message));
