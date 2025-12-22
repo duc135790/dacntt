@@ -1,5 +1,9 @@
 import Order from '../models/orderModel.js';
 import Customer from '../models/customerModel.js';
+import { NotificationManager } from '../patterns/Observer.js'; // ✅ IMPORT OBSERVER
+
+const notificationManager = new NotificationManager(); // ✅ KHỞI TẠO
+
  //@desc Tao don hang moi
  //@route POST /api/orders
  //@access Private
@@ -30,6 +34,25 @@ import Customer from '../models/customerModel.js';
 
         //luu don hang vao db
         const createdOrder = await order.save();
+
+        // ✅ DÙNG OBSERVER PATTERN - Gửi thông báo
+        console.log('\n📢 Using Observer Pattern to send notifications');
+        const orderObserver = notificationManager.createOrder({
+            _id: createdOrder._id,
+            orderId: createdOrder._id,
+            status: createdOrder.orderStatus,
+            totalPrice: createdOrder.totalPrice,
+            user: {
+                name: customer.name,
+                email: customer.email,
+                _id: customer._id
+            },
+            shippingAddress: createdOrder.shippingAddress,
+            customerName: customer.name,
+            customerEmail: customer.email,
+            customerPhone: createdOrder.shippingAddress.phone
+        });
+        orderObserver.setStatus('Đang xử lý'); // Trigger notifications
 
         //xoa gio hang cua nguoi dung sau khi dat hang
         customer.cart = [];
@@ -63,12 +86,30 @@ const getOrders = async (req, res) => {
 // @route   PUT /api/orders/:id/deliver
 // @access  Private/Admin
 const updateOrderToDelivered = async (req, res) => {
-  const order = await Order.findById(req.params.id);
+  const order = await Order.findById(req.params.id).populate('user', 'name email');
 
   if (order) {
     order.isDelivered = true;
     order.deliveredAt = Date.now();
+    order.orderStatus = 'Đã giao';
+    
     const updatedOrder = await order.save();
+
+    // ✅ DÙNG OBSERVER PATTERN - Gửi thông báo khi đổi status
+    console.log('\n📢 Using Observer Pattern for status change');
+    const orderObserver = notificationManager.createOrder({
+        _id: updatedOrder._id,
+        orderId: updatedOrder._id,
+        status: updatedOrder.orderStatus,
+        totalPrice: updatedOrder.totalPrice,
+        user: order.user,
+        shippingAddress: updatedOrder.shippingAddress,
+        customerName: order.user.name,
+        customerEmail: order.user.email,
+        customerPhone: updatedOrder.shippingAddress.phone
+    });
+    orderObserver.setStatus('Đã giao'); // Trigger notifications
+    
     res.json(updatedOrder);
   } else {
     res.status(404);
@@ -105,7 +146,7 @@ const getOrderById = async (req, res) => {
 // @route   DELETE /api/orders/:id
 // @access  Private (User hoặc Admin)
 const cancelOrder = async (req, res) => {
-  const order = await Order.findById(req.params.id);
+  const order = await Order.findById(req.params.id).populate('user', 'name email');
 
   if (!order) {
     res.status(404);
@@ -113,7 +154,7 @@ const cancelOrder = async (req, res) => {
   }
 
   // Kiểm tra quyền: User phải là chủ đơn hàng hoặc Admin
-  if (!req.user.isAdmin && !order.user.equals(req.user._id)) {
+  if (!req.user.isAdmin && !order.user._id.equals(req.user._id)) {
     res.status(401);
     throw new Error('Không có quyền hủy đơn hàng này');
   }
@@ -133,6 +174,21 @@ const cancelOrder = async (req, res) => {
   // Cập nhật trạng thái đơn hàng thành "Đã hủy"
   order.orderStatus = 'Đã hủy';
   const updatedOrder = await order.save();
+
+  // ✅ DÙNG OBSERVER PATTERN - Gửi thông báo khi hủy
+  console.log('\n📢 Using Observer Pattern for order cancellation');
+  const orderObserver = notificationManager.createOrder({
+      _id: updatedOrder._id,
+      orderId: updatedOrder._id,
+      status: 'Đã hủy',
+      totalPrice: updatedOrder.totalPrice,
+      user: order.user,
+      shippingAddress: updatedOrder.shippingAddress,
+      customerName: order.user.name,
+      customerEmail: order.user.email,
+      customerPhone: updatedOrder.shippingAddress.phone
+  });
+  orderObserver.setStatus('Đã hủy'); // Trigger notifications
 
   res.json({
     message: 'Đơn hàng đã được hủy thành công',

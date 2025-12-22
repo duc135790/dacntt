@@ -43,6 +43,7 @@ if (!process.env.MONGO_URI) {
 import productRoutes from './routes/productRoutes.js';
 import customerRoutes from './routes/customerRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
+import orderRoutesV2 from './routes/orderRoutesV2.js'; // ✅ THÊM ROUTES PATTERNS
 import voucherRoutes from './routes/voucherRoutes.js';
 
 connectDB().catch(err => {
@@ -79,6 +80,8 @@ app.use('/api/customers', customerRoutes);
 console.log('  ✅ /api/customers registered');
 app.use('/api/orders', orderRoutes);
 console.log('  ✅ /api/orders registered');
+app.use('/api/orders', orderRoutesV2); // ✅ THÊM ROUTES V2 WITH PATTERNS
+console.log('  ✅ /api/orders (v2 with patterns) registered');
 app.use('/api/vouchers', voucherRoutes);
 console.log('  ✅ /api/vouchers registered');
 
@@ -120,4 +123,10 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, ()=>{
     console.log(`✅ Server started at http://localhost:${PORT}`);
     console.log(`✅ API routes available at http://localhost:${PORT}/api`);
+    console.log(`\n🎨 Design Patterns Endpoints:`);
+    console.log(`   📍 GET  /api/orders/demo-patterns - Demo all patterns`);
+    console.log(`   📍 POST /api/orders/v2 - Create order with patterns`);
+    console.log(`   📍 GET  /api/orders/payment-methods - Strategy pattern demo`);
+    console.log(`   📍 PUT  /api/orders/v2/:id/status - Observer pattern demo`);
+    console.log(`   📍 GET  /api/orders/cart-stats - Singleton pattern demo\n`);
 });
