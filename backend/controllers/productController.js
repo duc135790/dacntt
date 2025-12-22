@@ -64,71 +64,128 @@ const getAllProductsAdmin = async (req, res) => {
   }
 };
 
-// @desc    Tạo sản phẩm mới (Dữ liệu mẫu)
+// @desc    Tạo sản phẩm mới
 // @route   POST /api/products
 // @access  Private/Admin
 const createProduct = async (req, res) => {
-    // Tạo một cuốn sách mẫu rỗng để Admin vào sửa sau
-    const product = new Product({
-        user: req.user._id,
-        name: 'Tên sách mới',
-        image: '/images/sample.jpg',
-        description: 'Mô tả nội dung sách...',
-        category: 'Văn học',
-        price: 0,
-        countInStock: 0,
-        author: 'Tên tác giả',
-        publisher: 'Nhà xuất bản',
-        publicationYear: 2024,
-        language: 'Tiếng Việt',
-        pageCount: 100
-    });
-
-    const createdProduct = await product.save();
-    res.status(201).json(createdProduct);
-};
-
-// @desc    Cập nhật sản phẩm
-// @route   PUT /api/products/:id
-// @access  Private/Admin
-const updateProduct = async (req, res) => {
-  // Lấy các trường dữ liệu Sách từ Frontend gửi lên
-  const { 
-      name, 
-      price, 
-      description, 
-      image, 
-      category, 
+  try {
+    const {
+      name,
+      category,
+      price,
+      description,
+      image,
       countInStock,
       author,
       publisher,
       publicationYear,
       language,
       pageCount
-  } = req.body;
+    } = req.body;
 
-  const product = await Product.findById(req.params.id);
+    // Tạo sản phẩm mới với dữ liệu từ frontend
+    const product = new Product({
+      user: req.user._id,
+      name: name || 'Tên sản phẩm mới',
+      category: category || 'Khác',
+      price: price || 0,
+      description: description || '',
+      image: image || '/images/sample.jpg',
+      countInStock: countInStock || 0,
+      author: author || '',
+      publisher: publisher || '',
+      publicationYear: publicationYear || new Date().getFullYear(),
+      language: language || 'Tiếng Việt',
+      pageCount: pageCount || 0
+    });
 
-  if (product) {
-    product.name = name || product.name;
-    product.price = price || product.price;
-    product.description = description || product.description;
-    product.image = image || product.image;
-    product.category = category || product.category;
-    product.countInStock = countInStock !== undefined ? countInStock : product.countInStock;
+    const createdProduct = await product.save();
+    console.log('✅ Product created:', createdProduct.name);
+    res.status(201).json(createdProduct);
+  } catch (error) {
+    console.error('❌ Error creating product:', error);
+    res.status(500).json({ 
+      message: error.message || 'Tạo sản phẩm thất bại' 
+    });
+  }
+};
+
+// @desc    Cập nhật sản phẩm
+// @route   PUT /api/products/:id
+// @access  Private/Admin
+const updateProduct = async (req, res) => {
+  try {
+    // Lấy các trường dữ liệu từ Frontend gửi lên
+    const { 
+        name, 
+        price, 
+        description, 
+        image, 
+        category, 
+        countInStock,
+        author,
+        publisher,
+        publicationYear,
+        language,
+        pageCount
+    } = req.body;
+
+    console.log('📝 Update product request:', req.params.id, req.body);
+
+    const product = await Product.findById(req.params.id);
+
+    if (!product) {
+      return res.status(404).json({ 
+        message: 'Không tìm thấy sản phẩm' 
+      });
+    }
+
+    // Validate required fields nếu được gửi lên
+    if (name !== undefined && (!name || !name.trim())) {
+      return res.status(400).json({ message: 'Tên sản phẩm không được để trống' });
+    }
+    if (category !== undefined && (!category || !category.trim())) {
+      return res.status(400).json({ message: 'Danh mục không được để trống' });
+    }
+    if (description !== undefined && (!description || !description.trim())) {
+      return res.status(400).json({ message: 'Mô tả không được để trống' });
+    }
+    if (image !== undefined && (!image || !image.trim())) {
+      return res.status(400).json({ message: 'URL hình ảnh không được để trống' });
+    }
+
+    // Cập nhật các trường, chỉ cập nhật nếu có giá trị hợp lệ được gửi lên
+    if (name !== undefined && name.trim()) product.name = name.trim();
+    if (price !== undefined && price >= 0) product.price = price;
+    if (description !== undefined) product.description = description.trim() || product.description;
+    if (image !== undefined) product.image = image.trim() || product.image;
+    if (category !== undefined && category.trim()) product.category = category.trim();
+    if (countInStock !== undefined && countInStock >= 0) product.countInStock = countInStock;
     
-    // Cập nhật các trường sách
-    product.author = author || product.author;
-    product.publisher = publisher || product.publisher;
-    product.publicationYear = publicationYear || product.publicationYear;
-    product.language = language || product.language;
-    product.pageCount = pageCount || product.pageCount;
+    // Cập nhật các trường sách (optional)
+    if (author !== undefined) product.author = author || '';
+    if (publisher !== undefined) product.publisher = publisher || '';
+    if (publicationYear !== undefined) product.publicationYear = publicationYear;
+    if (language !== undefined) product.language = language || 'Tiếng Việt';
+    if (pageCount !== undefined) product.pageCount = pageCount;
 
     const updatedProduct = await product.save();
+    console.log('✅ Product updated:', updatedProduct.name);
     res.json(updatedProduct);
-  } else {
-    res.status(404);
-    throw new Error('Không tìm thấy sách');
+  } catch (error) {
+    console.error('❌ Error updating product:', error);
+    
+    // Xử lý validation errors từ Mongoose
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(err => err.message).join(', ');
+      return res.status(400).json({ 
+        message: `Lỗi validation: ${messages}` 
+      });
+    }
+    
+    res.status(error.statusCode || 500).json({ 
+      message: error.message || 'Cập nhật sản phẩm thất bại' 
+    });
   }
 };
 

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { productsAPI, cartAPI } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
-import { FaBook, FaShoppingCart, FaArrowLeft, FaCheckCircle, FaExclamationCircle, FaUser, FaBuilding, FaFileAlt, FaGlobe, FaStar } from 'react-icons/fa';
+import { FaBook, FaShoppingCart, FaArrowLeft, FaCheckCircle, FaExclamationCircle, FaUser, FaBuilding, FaFileAlt, FaGlobe } from 'react-icons/fa';
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -120,15 +120,7 @@ const ProductDetail = () => {
                   {product.category || product.brand}
                 </span>
                 <h1 className="text-3xl font-bold mb-2 text-gray-800">{product.name}</h1>
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="flex text-yellow-400">
-                    {[...Array(5)].map((_, i) => (
-                      <FaStar key={i} className={i < (product.rating || 4) ? 'fill-current' : 'text-gray-300'} />
-                    ))}
-                  </div>
-                  <span className="text-sm text-gray-600">({product.numReviews || 0} đánh giá)</span>
-                </div>
-                <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold ${
+                <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold mb-3 ${
                   product.countInStock > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                 }`}>
                   {product.countInStock > 0 ? '✓ Còn hàng' : '✗ Hết hàng'}
@@ -143,7 +135,7 @@ const ProductDetail = () => {
 
               {/* Description */}
               <div className="mb-6">
-                <h3 className="font-bold text-gray-800 mb-2">Giới thiệu sách</h3>
+                <h3 className="font-bold text-gray-800 mb-2">Giới thiệu sản phẩm</h3>
                 <p className="text-gray-700 leading-relaxed">
                   {product.description || 'Sách hay chính hãng, đầy đủ nội dung'}
                 </p>

@@ -23,9 +23,6 @@ const Checkout = () => {
     name: user?.name || '',
     phone: user?.phone || '',
     address: '',
-    city: '',
-    district: '',
-    ward: '',
     notes: ''
   });
 
@@ -133,7 +130,7 @@ const Checkout = () => {
   };
 
   const validateStep1 = () => {
-    if (!shippingInfo.name || !shippingInfo.phone || !shippingInfo.address || !shippingInfo.city) {
+    if (!shippingInfo.name || !shippingInfo.phone || !shippingInfo.address) {
       alert('Vui lòng điền đầy đủ thông tin giao hàng');
       return false;
     }
@@ -160,7 +157,7 @@ const Checkout = () => {
       const orderData = {
         shippingAddress: {
           address: shippingInfo.address,
-          city: shippingInfo.city,
+          city: shippingInfo.address, // Sử dụng địa chỉ đầy đủ làm city
           phone: shippingInfo.phone
         },
         paymentMethod: paymentMethod,
@@ -229,7 +226,7 @@ const Checkout = () => {
                 <div className="space-y-2 text-sm text-gray-700">
                   <p><strong>Người nhận:</strong> {shippingInfo.name}</p>
                   <p><strong>SĐT:</strong> {shippingInfo.phone}</p>
-                  <p><strong>Địa chỉ:</strong> {shippingInfo.address}, {shippingInfo.city}</p>
+                  <p><strong>Địa chỉ:</strong> {shippingInfo.address}</p>
                 </div>
               </div>
               
@@ -312,27 +309,7 @@ const Checkout = () => {
 
                   <div className="mt-4">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Địa chỉ *</label>
-                    <input type="text" name="address" value={shippingInfo.address} onChange={handleInputChange} required placeholder="Số nhà, tên đường" className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500" />
-                  </div>
-
-                  <div className="grid md:grid-cols-3 gap-4 mt-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Tỉnh/TP *</label>
-                      <select name="city" value={shippingInfo.city} onChange={handleInputChange} required className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500">
-                        <option value="">Chọn</option>
-                        <option value="Hà Nội">Hà Nội</option>
-                        <option value="TP. Hồ Chí Minh">TP. Hồ Chí Minh</option>
-                        <option value="Đà Nẵng">Đà Nẵng</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Quận/Huyện</label>
-                      <input type="text" name="district" value={shippingInfo.district} onChange={handleInputChange} className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Phường/Xã</label>
-                      <input type="text" name="ward" value={shippingInfo.ward} onChange={handleInputChange} className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500" />
-                    </div>
+                    <input type="text" name="address" value={shippingInfo.address} onChange={handleInputChange} required placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố" className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500" />
                   </div>
 
                   <div className="mt-4">
@@ -466,7 +443,7 @@ const Checkout = () => {
                   <div className="text-sm space-y-1 text-gray-700">
                     <p><strong>Người nhận:</strong> {shippingInfo.name}</p>
                     <p><strong>SĐT:</strong> {shippingInfo.phone}</p>
-                    <p><strong>Địa chỉ:</strong> {shippingInfo.address}, {shippingInfo.city}</p>
+                    <p><strong>Địa chỉ:</strong> {shippingInfo.address}</p>
                   </div>
                 </div>
 

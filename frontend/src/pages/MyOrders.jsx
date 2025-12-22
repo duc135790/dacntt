@@ -8,6 +8,7 @@ const MyOrders = () => {
   const { user } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [cancellingOrderId, setCancellingOrderId] = useState(null);
 
   useEffect(() => {
     if (user) {
@@ -21,11 +22,32 @@ const MyOrders = () => {
     try {
       const response = await ordersAPI.getMyOrders();
       console.log('📦 Orders:', response.data);
-      setOrders(response.data);
+      // Lọc bỏ các đơn hàng đã hủy
+      const activeOrders = response.data.filter(order => order.orderStatus !== 'Đã hủy');
+      setOrders(activeOrders);
     } catch (error) {
       console.error('Error fetching orders:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCancelOrder = async (orderId) => {
+    if (!window.confirm('Bạn có chắc chắn muốn hủy đơn hàng này?')) {
+      return;
+    }
+
+    setCancellingOrderId(orderId);
+    try {
+      await ordersAPI.cancelOrder(orderId);
+      alert('✅ Đã hủy đơn hàng thành công!');
+      // Refresh danh sách đơn hàng
+      await fetchOrders();
+    } catch (error) {
+      console.error('Error cancelling order:', error);
+      alert(error.response?.data?.message || 'Hủy đơn hàng thất bại');
+    } finally {
+      setCancellingOrderId(null);
     }
   };
 
@@ -223,29 +245,20 @@ const MyOrders = () => {
                   <p className="text-sm text-gray-700">
                     <strong>Phương thức thanh toán:</strong> {order.paymentMethod === 'COD' ? 'Thanh toán khi nhận hàng' : 'Chuyển khoản'}
                   </p>
-                  <p className="text-sm text-gray-600 mt-1">
-                    <strong>Trạng thái thanh toán:</strong> {order.isPaid ? '✓ Đã thanh toán' : '⏳ Chưa thanh toán'}
-                  </p>
                 </div>
 
                 {/* Actions */}
-                <div className="mt-4 flex gap-3">
-                  {order.orderStatus === 'Đang xử lý' && (
-                    <button className="flex-1 bg-red-600 text-white py-2 rounded-lg font-semibold hover:bg-red-700 transition-colors">
-                      Hủy đơn hàng
+                {order.orderStatus === 'Đang xử lý' && (
+                  <div className="mt-4">
+                    <button 
+                      onClick={() => handleCancelOrder(order._id)}
+                      disabled={cancellingOrderId === order._id}
+                      className="w-full bg-red-600 text-white py-2 rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {cancellingOrderId === order._id ? 'Đang hủy...' : 'Hủy đơn hàng'}
                     </button>
-                  )}
-                  
-                  {order.orderStatus === 'Đã giao' && (
-                    <button className="flex-1 bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
-                      Đánh giá sản phẩm
-                    </button>
-                  )}
-                  
-                  <button className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg font-semibold hover:bg-gray-300 transition-colors">
-                    Liên hệ hỗ trợ
-                  </button>
-                </div>
+                  </div>
+                )}
               </div>
             </div>
           ))}

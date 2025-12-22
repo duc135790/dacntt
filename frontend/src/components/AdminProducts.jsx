@@ -46,10 +46,41 @@ const AdminProducts = ({ onProductsChange }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      // Validate required fields
+      if (!formData.name || !formData.name.trim()) {
+        alert('Vui lòng nhập tên sản phẩm');
+        return;
+      }
+      if (!formData.brand || !formData.brand.trim()) {
+        alert('Vui lòng chọn danh mục');
+        return;
+      }
+      if (!formData.price || Number(formData.price) < 0) {
+        alert('Vui lòng nhập giá hợp lệ');
+        return;
+      }
+      if (!formData.stock || Number(formData.stock) < 0) {
+        alert('Vui lòng nhập số lượng tồn kho hợp lệ');
+        return;
+      }
+
+      // Map formData sang format mà backend mong đợi
+      const productData = {
+        name: formData.name.trim(),
+        category: formData.brand.trim(), // Map brand -> category
+        price: Number(formData.price),
+        description: formData.description?.trim() || '',
+        image: formData.image?.trim() || '',
+        countInStock: Number(formData.stock),
+        language: formData.language || 'Tiếng Việt',
+      };
+
       if (editingProduct) {
-        await productsAPI.updateProduct(editingProduct._id, formData);
+        await productsAPI.updateProduct(editingProduct._id, productData);
+        alert('✅ Cập nhật sản phẩm thành công!');
       } else {
-        await productsAPI.createProduct(formData);
+        await productsAPI.createProduct(productData);
+        alert('✅ Thêm sản phẩm thành công!');
       }
       setShowModal(false);
       setEditingProduct(null);
@@ -68,7 +99,9 @@ const AdminProducts = ({ onProductsChange }) => {
         onProductsChange();
       }
     } catch (error) {
-      alert(error.response?.data?.message || 'Có lỗi xảy ra');
+      console.error('Error saving product:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Có lỗi xảy ra';
+      alert(`❌ ${errorMessage}`);
     }
   };
 
