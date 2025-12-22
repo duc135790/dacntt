@@ -11,17 +11,18 @@ const Products = () => {
   const [loading, setLoading] = useState(true);
   const [searchParams, setSearchParams] = useSearchParams();
   const [filter, setFilter] = useState(searchParams.get('category') || '');
+  const [keyword, setKeyword] = useState(searchParams.get('keyword') || '');
   const [sortBy, setSortBy] = useState('newest');
   const [addingToCart, setAddingToCart] = useState({});
 
   useEffect(() => {
     fetchProducts();
-  }, [filter]);
+  }, [filter, keyword]);
 
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const response = await productsAPI.getProducts(filter || null);
+      const response = await productsAPI.getProducts(filter || null, keyword || null);
       setProducts(response.data);
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -32,11 +33,12 @@ const Products = () => {
 
   const handleFilterChange = (value) => {
     setFilter(value);
-    if (value) {
-      setSearchParams({ category: value });
-    } else {
-      setSearchParams({});
-    }
+    const params = {};
+
+    if (value) params.category = value;
+    if (keyword) params.keyword = keyword;
+
+    setSearchParams(params);
   };
 
   // ✅ HÀM THÊM VÀO GIỎ HÀNG
