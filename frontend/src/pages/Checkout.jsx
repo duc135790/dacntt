@@ -424,7 +424,10 @@ const Checkout = () => {
               </h2>
               
               <div className="space-y-3">
-                <label className="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-red-500">
+                {/* COD */}
+                <label className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-colors ${
+                  paymentMethod === 'COD' ? 'border-red-500 bg-red-50' : 'border-gray-200 hover:border-red-300'
+                }`}>
                   <input 
                     type="radio" 
                     name="paymentMethod" 
@@ -435,10 +438,99 @@ const Checkout = () => {
                   />
                   <div>
                     <p className="font-semibold">💵 Thanh toán khi nhận hàng (COD)</p>
-                    <p className="text-sm text-gray-600">Thanh toán bằng tiền mặt</p>
+                    <p className="text-sm text-gray-600">Thanh toán bằng tiền mặt khi nhận hàng</p>
+                  </div>
+                </label>
+
+                {/* Bank Transfer */}
+                <label className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-colors ${
+                  paymentMethod === 'BANK_TRANSFER' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'
+                }`}>
+                  <input 
+                    type="radio" 
+                    name="paymentMethod" 
+                    value="BANK_TRANSFER" 
+                    checked={paymentMethod === 'BANK_TRANSFER'} 
+                    onChange={(e) => setPaymentMethod(e.target.value)} 
+                    className="mr-3" 
+                  />
+                  <div>
+                    <p className="font-semibold">🏦 Chuyển khoản ngân hàng</p>
+                    <p className="text-sm text-gray-600">Chuyển khoản qua tài khoản ngân hàng</p>
+                  </div>
+                </label>
+
+                {/* Credit Card */}
+                <label className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-colors ${
+                  paymentMethod === 'CREDIT_CARD' ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-purple-300'
+                }`}>
+                  <input 
+                    type="radio" 
+                    name="paymentMethod" 
+                    value="CREDIT_CARD" 
+                    checked={paymentMethod === 'CREDIT_CARD'} 
+                    onChange={(e) => setPaymentMethod(e.target.value)} 
+                    className="mr-3" 
+                  />
+                  <div>
+                    <p className="font-semibold">💳 Thẻ tín dụng/Ghi nợ</p>
+                    <p className="text-sm text-gray-600">Thanh toán qua thẻ Visa, Mastercard</p>
+                  </div>
+                </label>
+
+                {/* MoMo */}
+                <label className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-colors ${
+                  paymentMethod === 'MOMO' ? 'border-pink-500 bg-pink-50' : 'border-gray-200 hover:border-pink-300'
+                }`}>
+                  <input 
+                    type="radio" 
+                    name="paymentMethod" 
+                    value="MOMO" 
+                    checked={paymentMethod === 'MOMO'} 
+                    onChange={(e) => setPaymentMethod(e.target.value)} 
+                    className="mr-3" 
+                  />
+                  <div>
+                    <p className="font-semibold">📱 Ví MoMo</p>
+                    <p className="text-sm text-gray-600">Thanh toán qua ví điện tử MoMo</p>
                   </div>
                 </label>
               </div>
+
+              {/* Thông tin bổ sung cho từng phương thức */}
+              {paymentMethod === 'BANK_TRANSFER' && (
+                <div className="mt-4 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-500">
+                  <p className="text-sm font-semibold text-blue-900 mb-2">📝 Thông tin chuyển khoản:</p>
+                  <div className="text-sm text-blue-800 space-y-1">
+                    <p>Ngân hàng: <strong>Vietcombank</strong></p>
+                    <p>Số TK: <strong>1234567890</strong></p>
+                    <p>Chủ TK: <strong>CONG TY SMART</strong></p>
+                    <p>Nội dung: <strong>SMART [Mã đơn hàng]</strong></p>
+                  </div>
+                </div>
+              )}
+
+              {paymentMethod === 'CREDIT_CARD' && (
+                <div className="mt-4 p-4 bg-purple-50 rounded-lg border-l-4 border-purple-500">
+                  <p className="text-sm text-purple-900">
+                    💳 Hỗ trợ: <strong>Visa, Mastercard, JCB</strong>
+                  </p>
+                  <p className="text-xs text-purple-700 mt-1">
+                    Thông tin thẻ được mã hóa bảo mật SSL 256-bit
+                  </p>
+                </div>
+              )}
+
+              {paymentMethod === 'MOMO' && (
+                <div className="mt-4 p-4 bg-pink-50 rounded-lg border-l-4 border-pink-500">
+                  <p className="text-sm text-pink-900">
+                    📱 Quét mã QR hoặc mở app MoMo để thanh toán
+                  </p>
+                  <p className="text-xs text-pink-700 mt-1">
+                    Giao dịch an toàn, nhanh chóng
+                  </p>
+                </div>
+              )}
             </div>
 
             <button
@@ -511,7 +603,7 @@ const Checkout = () => {
           </div>
         </div>
       </div>
-    </div>
+  </div>
   );
 };
 
