@@ -218,7 +218,7 @@ const AdminProducts = ({ onProductsChange }) => {
                 <td className="px-6 py-4 whitespace-nowrap">
                   {product.price.toLocaleString()} ₫
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">{product.stock || product.countInStock || 0}</td>
+                <td className="px-6 py-4 whitespace-nowrap">{product.countInStock ?? product.stock ?? 0}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                   <button
                     onClick={() => handleEdit(product)}

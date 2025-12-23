@@ -90,19 +90,12 @@ const addOrderItems = async (req, res) => {
       console.log(`    Type: ${details.type}`);
       console.log(`    Shipping Fee: ${shippingFee.toLocaleString()}₫`);
 
-      // Kiểm tra tồn kho
+      // ✅ Kiểm tra tồn kho (chỉ kiểm tra, chưa trừ)
       if (product.countInStock < item.quantity) {
         return res.status(400).json({ 
           message: `Sản phẩm "${product.name}" chỉ còn ${product.countInStock} sản phẩm` 
         });
       }
-
-      // Trừ tồn kho
-      await Product.findByIdAndUpdate(
-        item.product,
-        { $inc: { countInStock: -item.quantity } },
-        { new: true }
-      );
     }
 
     console.log(`  ✓ Total Shipping Fee: ${totalShippingFee.toLocaleString()}₫`);
@@ -204,6 +197,48 @@ const addOrderItems = async (req, res) => {
 
     const createdOrder = await order.save();
     console.log('  ✅ Order created:', createdOrder._id);
+
+    // ========================================
+    // 5.5️⃣ TRỪ TỒN KHO SAU KHI ĐƠN HÀNG ĐƯỢC TẠO THÀNH CÔNG
+    // ========================================
+    console.log('\n📦 Step 5.5: Updating product stock after order creation');
+    try {
+      for (const item of cartItems) {
+        // Kiểm tra lại tồn kho một lần nữa (để tránh race condition)
+        const product = await Product.findById(item.product);
+        if (!product) {
+          throw new Error(`Không tìm thấy sản phẩm: ${item.product}`);
+        }
+
+        if (product.countInStock < item.quantity) {
+          // Hoàn trả đơn hàng nếu không đủ tồn kho
+          await Order.findByIdAndDelete(createdOrder._id);
+          return res.status(400).json({ 
+            message: `Sản phẩm "${product.name}" chỉ còn ${product.countInStock} sản phẩm. Đơn hàng đã được hủy.` 
+          });
+        }
+
+        // Trừ tồn kho bằng atomic operation
+        const updatedProduct = await Product.findByIdAndUpdate(
+          item.product,
+          { $inc: { countInStock: -item.quantity } },
+          { new: true }
+        );
+
+        if (!updatedProduct) {
+          throw new Error(`Không thể cập nhật tồn kho cho sản phẩm: ${item.product}`);
+        }
+
+        console.log(`  ✅ Đã trừ ${item.quantity} sản phẩm "${product.name}". Tồn kho còn: ${updatedProduct.countInStock}`);
+      }
+    } catch (error) {
+      // Nếu có lỗi khi trừ tồn kho, xóa đơn hàng đã tạo
+      console.error('❌ Error updating stock, rolling back order:', error);
+      await Order.findByIdAndDelete(createdOrder._id);
+      return res.status(500).json({ 
+        message: `Lỗi khi cập nhật tồn kho: ${error.message}. Đơn hàng đã được hủy.` 
+      });
+    }
 
     // ========================================
     // 6️⃣ OBSERVER PATTERN - Gửi thông báo
