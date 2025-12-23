@@ -8,52 +8,61 @@ import { connectDB } from './config/db.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const envPath = path.join(__dirname, '.env');
-const rootEnvPath = path.join(__dirname, '..', 'env');
-const rootDotEnvPath = path.join(__dirname, '..', '.env');
+// ✅ Load .env từ root project (parent directory)
+const rootEnvPath = path.join(__dirname, '..', '.env');
+const backendEnvPath = path.join(__dirname, '.env');
 
 let envLoaded = false;
-const result1 = dotenv.config({ path: envPath });
+
+// Thử load từ root trước
+const result1 = dotenv.config({ path: rootEnvPath });
 if (!result1.error) {
     envLoaded = true;
-    console.log('✅ Loaded .env from:', envPath);
+    console.log('✅ Loaded .env from ROOT:', rootEnvPath);
 } else {
-    const result2 = dotenv.config({ path: rootEnvPath });
+    // Nếu không có ở root, thử backend folder
+    const result2 = dotenv.config({ path: backendEnvPath });
     if (!result2.error) {
         envLoaded = true;
-        console.log('✅ Loaded env from:', rootEnvPath);
+        console.log('✅ Loaded .env from BACKEND:', backendEnvPath);
     } else {
-        const result3 = dotenv.config({ path: rootDotEnvPath });
-        if (!result3.error) {
-            envLoaded = true;
-            console.log('✅ Loaded .env from:', rootDotEnvPath);
-        } else {
-            console.warn('⚠️  No .env file found. Using system environment variables.');
-        }
+        console.warn('⚠️  No .env file found. Using system environment variables.');
     }
 }
 
+// Kiểm tra các biến môi trường quan trọng
 if (!process.env.MONGO_URI) {
     console.warn('⚠️  WARNING: MONGO_URI is not defined!');
-    console.warn('   Please create a .env file in the backend directory with MONGO_URI');
+    console.warn('   Please create a .env file with MONGO_URI');
     console.warn('   Server will start but database features will not work.');
 }
 
-//import các routes
+if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    console.warn('⚠️  WARNING: EMAIL_USER or EMAIL_PASS is not defined!');
+    console.warn('   Email notifications will not work.');
+} else {
+    console.log('✅ Email configuration loaded');
+    console.log('   📧 EMAIL_USER:', process.env.EMAIL_USER);
+    console.log('   🔑 EMAIL_PASS:', process.env.EMAIL_PASS ? '***' + process.env.EMAIL_PASS.slice(-4) : 'Not set');
+}
+
+// Import các routes
 import productRoutes from './routes/productRoutes.js';
 import customerRoutes from './routes/customerRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
-import orderRoutesV2 from './routes/orderRoutesV2.js'; // ✅ THÊM ROUTES PATTERNS
+import orderRoutesV2 from './routes/orderRoutesV2.js';
 import voucherRoutes from './routes/voucherRoutes.js';
 
+// Kết nối Database
 connectDB().catch(err => {
     console.error('❌ Failed to connect to MongoDB:', err.message);
 });
 
 const app = express();
 
+// CORS Configuration
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: process.env.CLIENT_URL || 'http://localhost:5173',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -61,6 +70,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
+// Request Logging Middleware
 app.use((req, res, next) => {
   console.log(`\n📥 [${new Date().toISOString()}] ${req.method} ${req.path}`);
   if (req.body && typeof req.body === 'object' && Object.keys(req.body).length > 0) {
@@ -69,10 +79,16 @@ app.use((req, res, next) => {
   next();
 });
 
+// Test Route
 app.get('/api/test', (req, res) => {
-  res.json({ message: 'Server is running!', timestamp: new Date().toISOString() });
+  res.json({ 
+    message: 'Server is running!', 
+    timestamp: new Date().toISOString(),
+    emailConfigured: !!(process.env.EMAIL_USER && process.env.EMAIL_PASS)
+  });
 });
 
+// Register Routes
 console.log('📋 Registering routes...');
 app.use('/api/products', productRoutes);
 console.log('  ✅ /api/products registered');
@@ -80,15 +96,17 @@ app.use('/api/customers', customerRoutes);
 console.log('  ✅ /api/customers registered');
 app.use('/api/orders', orderRoutes);
 console.log('  ✅ /api/orders registered');
-app.use('/api/orders', orderRoutesV2); // ✅ THÊM ROUTES V2 WITH PATTERNS
+app.use('/api/orders', orderRoutesV2);
 console.log('  ✅ /api/orders (v2 with patterns) registered');
 app.use('/api/vouchers', voucherRoutes);
 console.log('  ✅ /api/vouchers registered');
 
+// 404 Handler
 app.use((req, res) => {
   res.status(404).json({ message: `Route ${req.method} ${req.path} not found` });
 });
 
+// Error Handler
 app.use((err, req, res, next) => {
   console.error('❌ Error:', err.message);
   console.error('Stack:', err.stack);
@@ -120,9 +138,10 @@ app.use((err, req, res, next) => {
   });
 });
 
+// Start Server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, ()=>{
-    console.log(`✅ Server started at http://localhost:${PORT}`);
+app.listen(PORT, () => {
+    console.log(`\n✅ Server started at http://localhost:${PORT}`);
     console.log(`✅ API routes available at http://localhost:${PORT}/api`);
     console.log(`\n🎨 Design Patterns Endpoints:`);
     console.log(`   📍 GET  /api/orders/demo-patterns - Demo all patterns`);
