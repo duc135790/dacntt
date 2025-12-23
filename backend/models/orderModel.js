@@ -2,14 +2,12 @@ import mongoose from "mongoose";
 
 const orderSchema = mongoose.Schema(
     {
-        // Tham chiếu đến người dùng đặt hàng
         user: {
             type: mongoose.Schema.Types.ObjectId,
             required: true,
             ref: 'Customer',
         },
 
-        // Array chứa các sản phẩm đã mua
         orderItems: [
             {
                 name: { type: String, required: true },
@@ -24,28 +22,24 @@ const orderSchema = mongoose.Schema(
             },
         ],
 
-        // Thông tin giao hàng
         shippingAddress: {
             address: { type: String, required: true },
             city: { type: String, required: true },
             phone: { type: String, required: true },
         },
 
-        // Thông tin thanh toán
         paymentMethod: {
             type: String,
             required: true,
             default: 'COD',
         },
 
-        // Giá trị đơn hàng
         totalPrice: {
             type: Number,
             required: true,
             default: 0.0,
         },
 
-        // Trạng thái đơn hàng
         orderStatus: {
             type: String,
             required: true,
@@ -69,22 +63,30 @@ const orderSchema = mongoose.Schema(
         },
 
         // ========================================
-        // ✅ THÊM: Lưu thông tin Design Patterns
+        // ✅ DECORATOR PATTERN - Các tính năng bổ sung
         // ========================================
-        
-        // DECORATOR PATTERN - Các tính năng bổ sung
         decorators: [{
-            type: { type: String },  // 'giftWrap', 'expressShipping', 'insurance', 'priorityPackaging'
+            type: { type: String },
             enabled: { type: Boolean, default: true },
             cost: Number,
             description: String
         }],
+        
+        // ✅ THÊM: Lưu chi tiết extras từ Decorator
+        extras: [{
+            name: String,      // "Gói quà cao cấp"
+            cost: Number,      // 25000
+            icon: String,      // "🎁"
+            description: String
+        }],
 
-        // STRATEGY PATTERN - Thông tin thanh toán chi tiết
+        // ========================================
+        // ✅ STRATEGY PATTERN - Thông tin thanh toán chi tiết
+        // ========================================
         paymentInfo: {
             transactionId: String,
-            method: String,  // 'COD', 'BANK_TRANSFER', 'CREDIT_CARD', 'MOMO'
-            status: String,  // 'PENDING', 'PAID', 'WAITING_CONFIRMATION', etc.
+            method: String,
+            status: String,
             bankInfo: {
                 bankName: String,
                 accountNumber: String,
@@ -100,18 +102,20 @@ const orderSchema = mongoose.Schema(
             }
         },
 
-        // ABSTRACT FACTORY - Thông tin về loại sản phẩm đã xử lý
+        // ========================================
+        // ✅ ABSTRACT FACTORY - Thông tin về loại sản phẩm đã xử lý
+        // ========================================
         productsMetadata: [
             {
-                productId: mongoose.Schema.Types.ObjectId,
                 productType: String,  // 'Book', 'Electronic', 'Clothing'
-                category: String,
                 shippingFee: Number,
-                factoryUsed: String
+                quantity: Number
             }
         ],
 
-        // OBSERVER PATTERN - Log các thông báo đã gửi
+        // ========================================
+        // ✅ OBSERVER PATTERN - Log các thông báo đã gửi
+        // ========================================
         notifications: [
             {
                 type: String,  // 'email', 'sms', 'push', 'dashboard'
@@ -149,6 +153,11 @@ orderSchema.methods.getDecoratorsTotal = function() {
         .reduce((sum, d) => sum + (d.cost || 0), 0);
 };
 
+// ✅ THÊM: Tính tổng chi phí extras
+orderSchema.methods.getExtrasTotal = function() {
+    return this.extras.reduce((sum, e) => sum + (e.cost || 0), 0);
+};
+
 // Log notification
 orderSchema.methods.logNotification = function(type, recipient, message, status = 'sent') {
     this.notifications.push({
@@ -166,6 +175,13 @@ orderSchema.methods.getActiveDecorators = function() {
     return this.decorators.filter(d => d.enabled);
 };
 
+// ✅ THÊM: Tính tổng shipping fee từ products metadata
+orderSchema.methods.getTotalShippingFee = function() {
+    return this.productsMetadata.reduce((sum, p) => {
+        return sum + (p.shippingFee * p.quantity);
+    }, 0);
+};
+
 // ========================================
 // Virtual Fields
 // ========================================
@@ -179,6 +195,12 @@ orderSchema.virtual('finalTotalPrice').get(function() {
 // Số lượng notifications đã gửi
 orderSchema.virtual('notificationCount').get(function() {
     return this.notifications.length;
+});
+
+// ✅ THÊM: Base price (không bao gồm extras)
+orderSchema.virtual('basePrice').get(function() {
+    const extrasCost = this.getExtrasTotal();
+    return this.totalPrice - extrasCost;
 });
 
 // Ensure virtuals are included in JSON

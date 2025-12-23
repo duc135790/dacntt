@@ -26,11 +26,18 @@ class OrderSubject {
     }
   }
 
-  notify(orderData, event) {
+  async notify(orderData, event) {
     console.log(`📢 Notifying ${this.observers.length} observers about: ${event}`);
-    this.observers.forEach(observer => {
-      observer.update(orderData, event);
-    });
+    
+    // ✅ Gửi thông báo song song
+    const promises = this.observers.map(observer => 
+      observer.update(orderData, event).catch(err => {
+        console.error(`❌ Observer ${observer.constructor.name} failed:`, err.message);
+        return null;
+      })
+    );
+    
+    await Promise.all(promises);
   }
 }
 
@@ -41,22 +48,85 @@ class OrderObserver {
   }
 }
 
-// Concrete Observers
+// ========================================
+// ✅ Concrete Observers - GỬI THÔNG BÁO THẬT
+// ========================================
+
+// Email Notification Observer
 class EmailNotificationObserver extends OrderObserver {
-  update(orderData, event) {
+  constructor() {
+    super();
+    // ✅ Kiểm tra có cấu hình email không
+    this.canSendEmail = !!(process.env.EMAIL_USER && process.env.EMAIL_PASS);
+    
+    if (this.canSendEmail) {
+      // Chỉ import nodemailer khi có cấu hình
+      try {
+        const nodemailer = require('nodemailer');
+        this.transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS
+          }
+        });
+        console.log('📧 Email service configured');
+      } catch (error) {
+        console.warn('⚠️ Nodemailer not installed. Run: npm install nodemailer');
+        this.canSendEmail = false;
+      }
+    } else {
+      console.warn('⚠️ Email not configured. Set EMAIL_USER and EMAIL_PASS in .env');
+    }
+  }
+
+  async update(orderData, event) {
     console.log('\n📧 EMAIL NOTIFICATION');
     console.log(`To: ${orderData.customerEmail || 'customer@example.com'}`);
     console.log(`Subject: ${this.getEmailSubject(event)}`);
-    console.log(`Body: ${this.getEmailBody(orderData, event)}`);
     
-    // Trong thực tế, sẽ gọi email service
-    return {
-      type: 'email',
-      to: orderData.customerEmail,
-      subject: this.getEmailSubject(event),
-      body: this.getEmailBody(orderData, event),
-      sentAt: new Date()
-    };
+    // ✅ Gửi email thật nếu có cấu hình
+    if (this.canSendEmail) {
+      try {
+        await this.transporter.sendMail({
+          from: `"SMART Store" <${process.env.EMAIL_USER}>`,
+          to: orderData.customerEmail,
+          subject: this.getEmailSubject(event),
+          html: this.getEmailHTML(orderData, event)
+        });
+        
+        console.log('✅ Email sent successfully to:', orderData.customerEmail);
+        
+        return {
+          type: 'email',
+          to: orderData.customerEmail,
+          subject: this.getEmailSubject(event),
+          status: 'sent',
+          sentAt: new Date()
+        };
+      } catch (error) {
+        console.error('❌ Failed to send email:', error.message);
+        return {
+          type: 'email',
+          to: orderData.customerEmail,
+          status: 'failed',
+          error: error.message,
+          sentAt: new Date()
+        };
+      }
+    } else {
+      // Chỉ log nếu không có cấu hình
+      console.log(`Body: ${this.getEmailBody(orderData, event)}`);
+      
+      return {
+        type: 'email',
+        to: orderData.customerEmail,
+        subject: this.getEmailSubject(event),
+        body: this.getEmailBody(orderData, event),
+        status: 'simulated',
+        sentAt: new Date()
+      };
+    }
   }
 
   getEmailSubject(event) {
@@ -80,7 +150,53 @@ Chi tiết đơn hàng:
 - Tổng tiền: ${orderData.totalPrice?.toLocaleString()}đ
 - Trạng thái: ${orderData.status}
 
-Cảm ơn bạn đã mua hàng tại SMART!
+Cảm ơn bạn đã tin tưởng SMART!
+    `;
+  }
+
+  // ✅ THÊM: Email HTML đẹp hơn
+  getEmailHTML(orderData, event) {
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+    .content { background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px; }
+    .order-info { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; }
+    .footer { text-align: center; margin-top: 30px; color: #888; font-size: 12px; }
+    .button { display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🎉 SMART Store</h1>
+      <h2>${this.getEmailSubject(event)}</h2>
+    </div>
+    <div class="content">
+      <p>Xin chào <strong>${orderData.customerName || 'Quý khách'}</strong>,</p>
+      <p>Đơn hàng <strong>#${orderData.orderId}</strong> của bạn đã ${this.getStatusText(event)}.</p>
+      
+      <div class="order-info">
+        <h3>📦 Chi tiết đơn hàng</h3>
+        <p><strong>Mã đơn:</strong> #${orderData.orderId}</p>
+        <p><strong>Tổng tiền:</strong> ${orderData.totalPrice?.toLocaleString()}₫</p>
+        <p><strong>Trạng thái:</strong> ${orderData.status}</p>
+      </div>
+      
+      <p>Cảm ơn bạn đã tin tưởng và mua sắm tại SMART Store!</p>
+      
+      <a href="http://localhost:5173/my-orders" class="button">Xem đơn hàng</a>
+    </div>
+    <div class="footer">
+      <p>© 2024 SMART Store. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>
     `;
   }
 
@@ -96,17 +212,21 @@ Cảm ơn bạn đã mua hàng tại SMART!
   }
 }
 
+// SMS Notification Observer
 class SMSNotificationObserver extends OrderObserver {
-  update(orderData, event) {
+  async update(orderData, event) {
     console.log('\n📱 SMS NOTIFICATION');
     console.log(`To: ${orderData.customerPhone || '0901234567'}`);
     console.log(`Message: ${this.getSMSMessage(orderData, event)}`);
     
-    // Trong thực tế, sẽ gọi SMS service
+    // ✅ TODO: Tích hợp Twilio hoặc SMS service
+    // if (process.env.TWILIO_ACCOUNT_SID) { ... }
+    
     return {
       type: 'sms',
       to: orderData.customerPhone,
       message: this.getSMSMessage(orderData, event),
+      status: 'simulated',
       sentAt: new Date()
     };
   }
@@ -123,13 +243,15 @@ class SMSNotificationObserver extends OrderObserver {
   }
 }
 
+// Push Notification Observer
 class PushNotificationObserver extends OrderObserver {
-  update(orderData, event) {
+  async update(orderData, event) {
     console.log('\n🔔 PUSH NOTIFICATION');
     console.log(`Title: ${this.getPushTitle(event)}`);
     console.log(`Body: ${this.getPushBody(orderData, event)}`);
     
-    // Trong thực tế, sẽ gọi push notification service
+    // ✅ TODO: Tích hợp Firebase Cloud Messaging
+    
     return {
       type: 'push',
       userId: orderData.userId,
@@ -139,6 +261,7 @@ class PushNotificationObserver extends OrderObserver {
         orderId: orderData.orderId,
         event: event
       },
+      status: 'simulated',
       sentAt: new Date()
     };
   }
@@ -159,14 +282,16 @@ class PushNotificationObserver extends OrderObserver {
   }
 }
 
+// Admin Dashboard Observer
 class AdminDashboardObserver extends OrderObserver {
-  update(orderData, event) {
+  async update(orderData, event) {
     console.log('\n🖥️ ADMIN DASHBOARD UPDATE');
     console.log(`Event: ${event}`);
     console.log(`Order: #${orderData.orderId}`);
     console.log(`Status: ${orderData.status}`);
     
-    // Trong thực tế, sẽ update real-time dashboard
+    // ✅ TODO: Tích hợp WebSocket để update real-time dashboard
+    
     return {
       type: 'dashboard',
       event: event,
@@ -175,7 +300,8 @@ class AdminDashboardObserver extends OrderObserver {
         status: orderData.status,
         totalPrice: orderData.totalPrice,
         updatedAt: new Date()
-      }
+      },
+      status: 'simulated'
     };
   }
 }
@@ -193,7 +319,7 @@ class Order extends OrderSubject {
     this.userId = orderData.user?._id || orderData.userId;
   }
 
-  setStatus(newStatus) {
+  async setStatus(newStatus) {
     const oldStatus = this.status;
     this.status = newStatus;
     
@@ -209,7 +335,7 @@ class Order extends OrderSubject {
     };
     
     const event = eventMap[newStatus] || 'ORDER_UPDATED';
-    this.notify(this.getOrderData(), event);
+    await this.notify(this.getOrderData(), event);
   }
 
   getOrderData() {

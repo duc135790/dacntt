@@ -25,9 +25,7 @@ const addOrderItems = async (req, res) => {
       shippingAddress, 
       paymentMethod, 
       totalPrice,
-      // ✅ THÊM: Nhận decorators từ frontend
       decorators = [],
-      // ✅ THÊM: Nhận payment info từ frontend
       paymentInfo = {}
     } = req.body;
     
@@ -47,7 +45,8 @@ const addOrderItems = async (req, res) => {
       return res.status(400).json({ message: 'Không có sản phẩm nào trong giỏ hàng' });
     }
 
-    // Track cart stats với Singleton
+    // ✅ Track cart với Singleton
+    cartManager.trackCart(req.user._id, cartItems.length);
     console.log('🛒 Cart Stats:', cartManager.getCartStats());
 
     // ========================================
@@ -55,6 +54,7 @@ const addOrderItems = async (req, res) => {
     // ========================================
     console.log('\n🏭 Step 2: Using ABSTRACT FACTORY to process products');
     const productsWithFactory = [];
+    let totalShippingFee = 0;
     
     for (const item of cartItems) {
       const product = await Product.findById(item.product);
@@ -62,24 +62,33 @@ const addOrderItems = async (req, res) => {
         return res.status(404).json({ message: 'Không tìm thấy sản phẩm trong giỏ hàng' });
       }
 
-      // Tạo product object với factory
+      // ✅ Tạo product object với factory
       const factoryProduct = ProductFactoryProducer.createProduct({
         name: product.name,
         price: product.price,
         category: product.category || product.brand,
         author: product.author,
         brand: product.brand,
+        quantity: item.quantity,
+        size: product.size,
+        color: product.color
+      });
+
+      const details = factoryProduct.getDetails();
+      const shippingFee = factoryProduct.calculateShipping();
+      
+      productsWithFactory.push({
+        product: factoryProduct,
+        details: details,
+        shippingFee: shippingFee,
         quantity: item.quantity
       });
 
-      productsWithFactory.push({
-        product: factoryProduct,
-        details: factoryProduct.getDetails(),
-        shippingFee: factoryProduct.calculateShipping()
-      });
+      totalShippingFee += shippingFee * item.quantity;
 
-      console.log(`  ✓ Product: ${factoryProduct.getDetails().name}`);
-      console.log(`    Shipping Fee: ${factoryProduct.calculateShipping().toLocaleString()}₫`);
+      console.log(`  ✓ Product: ${details.name}`);
+      console.log(`    Type: ${details.type}`);
+      console.log(`    Shipping Fee: ${shippingFee.toLocaleString()}₫`);
 
       // Kiểm tra tồn kho
       if (product.countInStock < item.quantity) {
@@ -96,13 +105,17 @@ const addOrderItems = async (req, res) => {
       );
     }
 
+    console.log(`  ✓ Total Shipping Fee: ${totalShippingFee.toLocaleString()}₫`);
+
     // ========================================
     // 3️⃣ DECORATOR PATTERN - Thêm tính năng cho đơn hàng
     // ========================================
     console.log('\n🎨 Step 3: Using DECORATOR to add features');
+    const basePrice = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    
     const baseOrderData = {
       orderItems: cartItems,
-      totalPrice: totalPrice || cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+      totalPrice: basePrice + totalShippingFee,
       shippingAddress,
       paymentMethod: paymentMethod || 'COD'
     };
@@ -113,9 +126,11 @@ const addOrderItems = async (req, res) => {
     );
 
     const orderDetails = decoratedOrder.getDetails();
+    const decoratorsCost = decoratedOrder.getCost() - baseOrderData.totalPrice;
     const finalPrice = decoratedOrder.getCost();
 
-    console.log('  ✓ Base Price:', baseOrderData.totalPrice.toLocaleString() + '₫');
+    console.log('  ✓ Base Price:', basePrice.toLocaleString() + '₫');
+    console.log('  ✓ Shipping Fee:', totalShippingFee.toLocaleString() + '₫');
     if (orderDetails.extras && orderDetails.extras.length > 0) {
       orderDetails.extras.forEach(extra => {
         console.log(`  ✓ ${extra.icon} ${extra.name}: +${extra.cost.toLocaleString()}₫`);
@@ -171,13 +186,20 @@ const addOrderItems = async (req, res) => {
       orderStatus: 'Đang xử lý',
       isPaid: paymentResult.status === 'PAID',
       paidAt: paymentResult.paidAt || null,
+      
       // ✅ LƯU THÔNG TIN PATTERNS
       decorators: decorators || [],
+      extras: orderDetails.extras || [],
       paymentInfo: {
         transactionId: paymentResult.transactionId,
         method: paymentResult.method,
         status: paymentResult.status
-      }
+      },
+      productsMetadata: productsWithFactory.map(p => ({
+        productType: p.details.type,
+        shippingFee: p.shippingFee,
+        quantity: p.quantity
+      }))
     });
 
     const createdOrder = await order.save();
@@ -203,7 +225,8 @@ const addOrderItems = async (req, res) => {
       customerPhone: createdOrder.shippingAddress.phone
     });
 
-    orderObserver.setStatus('Đang xử lý');
+    // ✅ Gửi thông báo
+    await orderObserver.setStatus('Đang xử lý');
 
     // ========================================
     // 7️⃣ SINGLETON - Clear cart
@@ -211,6 +234,9 @@ const addOrderItems = async (req, res) => {
     console.log('\n🧹 Step 7: Using SINGLETON to clear cart');
     customer.cart = [];
     await customer.save();
+    
+    // ✅ Clear trong CartManager
+    cartManager.clearCart(req.user._id);
     console.log('  ✅ Cart cleared for user:', customer._id);
 
     // ========================================
@@ -224,15 +250,19 @@ const addOrderItems = async (req, res) => {
       patterns: {
         abstractFactory: {
           productsProcessed: productsWithFactory.length,
+          totalShippingFee: totalShippingFee,
           products: productsWithFactory.map(p => ({
             name: p.details.name,
             type: p.details.type,
-            shippingFee: p.shippingFee
+            shippingFee: p.shippingFee,
+            quantity: p.quantity
           }))
         },
         decorator: {
           applied: decorators || [],
-          basePrice: baseOrderData.totalPrice,
+          basePrice: basePrice,
+          shippingFee: totalShippingFee,
+          decoratorsCost: decoratorsCost,
           extras: orderDetails.extras || [],
           finalPrice: finalPrice
         },
@@ -242,7 +272,7 @@ const addOrderItems = async (req, res) => {
           transactionId: paymentResult.transactionId
         },
         observer: {
-          notificationsSent: 4,
+          notificationsSent: true,
           status: 'Đang xử lý'
         },
         singleton: {
@@ -262,7 +292,7 @@ const addOrderItems = async (req, res) => {
 
 /**
  * ========================================
- * Các functions khác giữ nguyên
+ * Các functions khác
  * ========================================
  */
 const getMyOrders = async (req, res) => {
@@ -303,7 +333,7 @@ const updateOrderToDelivered = async (req, res) => {
         customerEmail: order.user.email,
         customerPhone: updatedOrder.shippingAddress.phone
     });
-    orderObserver.setStatus('Đã giao');
+    await orderObserver.setStatus('Đã giao');
     
     res.json(updatedOrder);
   } else {
@@ -382,7 +412,7 @@ const cancelOrder = async (req, res) => {
       customerEmail: order.user.email,
       customerPhone: updatedOrder.shippingAddress.phone
   });
-  orderObserver.setStatus('Đã hủy');
+  await orderObserver.setStatus('Đã hủy');
 
   res.json({
     message: 'Đơn hàng đã được hủy thành công',

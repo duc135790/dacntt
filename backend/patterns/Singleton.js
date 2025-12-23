@@ -15,6 +15,12 @@ class CartManager {
 
     this.carts = new Map(); // userId -> cart items
     this.cartHistory = new Map(); // userId -> history
+    this.cartStats = {
+      totalCarts: 0,
+      totalItems: 0,
+      lastUpdated: new Date()
+    };
+    
     CartManager.instance = this;
     
     console.log('🛒 CartManager Singleton initialized');
@@ -25,6 +31,16 @@ class CartManager {
       CartManager.instance = new CartManager();
     }
     return CartManager.instance;
+  }
+
+  // ✅ THÊM: Track cart khi tạo đơn hàng
+  trackCart(userId, itemCount) {
+    this.cartStats.totalCarts++;
+    this.cartStats.totalItems += itemCount;
+    this.cartStats.lastUpdated = new Date();
+    
+    this.addToHistory(userId, 'CHECKOUT', { itemCount });
+    console.log(`  ✓ Tracked cart checkout for user ${userId}: ${itemCount} items`);
   }
 
   getCart(userId) {
@@ -126,10 +142,10 @@ class CartManager {
   getCartStats() {
     return {
       totalUsers: this.carts.size,
-      totalCarts: Array.from(this.carts.values()).filter(cart => cart.length > 0).length,
-      totalItems: Array.from(this.carts.values()).reduce((sum, cart) => {
-        return sum + cart.reduce((itemSum, item) => itemSum + item.quantity, 0);
-      }, 0)
+      totalCarts: this.cartStats.totalCarts,
+      totalItems: this.cartStats.totalItems,
+      activeCarts: Array.from(this.carts.values()).filter(cart => cart.length > 0).length,
+      lastUpdated: this.cartStats.lastUpdated
     };
   }
 
@@ -185,7 +201,6 @@ class DatabaseConnectionPool {
         id: Date.now(),
         execute: async (query) => {
           console.log(`🔍 Executing query: ${query}`);
-          // Simulate query execution
           return new Promise(resolve => setTimeout(resolve, 100));
         },
         release: () => {
@@ -284,4 +299,3 @@ export {
   DatabaseConnectionPool,
   ConfigurationManager
 };
-
