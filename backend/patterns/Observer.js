@@ -59,27 +59,28 @@ class OrderObserver {
 class EmailNotificationObserver extends OrderObserver {
   constructor() {
     super();
-    this.setupTransporter();
+    this.transporter = null;
+    this.canSendEmail = false;
   }
 
   /**
-   * Cấu hình Nodemailer transporter
+   * Cấu hình Nodemailer transporter (LAZY INITIALIZATION)
+   * Chỉ khởi tạo khi cần dùng, đảm bảo .env đã load
    */
   setupTransporter() {
-    // Kiểm tra có cấu hình email không
+    // Kiểm tra lại mỗi lần gọi (vì .env có thể load muộn)
     this.canSendEmail = !!(process.env.EMAIL_USER && process.env.EMAIL_PASS);
     
-    if (this.canSendEmail) {
+    if (this.canSendEmail && !this.transporter) {
       this.transporter = nodemailer.createTransport({
-        service: 'gmail', // Hoặc 'hotmail', 'yahoo', etc.
+        service: 'gmail',
         auth: {
           user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASS // App Password, không phải mật khẩu Gmail thường
+          pass: process.env.EMAIL_PASS
         }
       });
-      console.log('📧 Email service configured successfully');
-    } else {
-      console.warn('⚠️ Email not configured. Set EMAIL_USER and EMAIL_PASS in .env');
+      console.log('✅ Email transporter initialized successfully');
+      console.log(`   📧 Using: ${process.env.EMAIL_USER}`);
     }
   }
 
@@ -88,8 +89,13 @@ class EmailNotificationObserver extends OrderObserver {
     console.log(`To: ${orderData.customerEmail}`);
     console.log(`Event: ${event}`);
 
+    // ✅ Setup transporter ngay trước khi gửi
+    this.setupTransporter();
+
     if (!this.canSendEmail) {
-      console.log('⚠️ Email service not configured, skipping...');
+      console.log('⚠️ Email service not configured');
+      console.log('   EMAIL_USER:', process.env.EMAIL_USER || 'NOT SET');
+      console.log('   EMAIL_PASS:', process.env.EMAIL_PASS ? 'SET' : 'NOT SET');
       return {
         type: 'email',
         status: 'skipped',
@@ -98,18 +104,29 @@ class EmailNotificationObserver extends OrderObserver {
     }
 
     try {
+      // 🔧 OVERRIDE: Nếu email là fake, gửi tới email thật
+      const realEmail = orderData.customerEmail.includes('@shoponline.com') 
+        ? process.env.EMAIL_USER  // Gửi tới chính email gửi
+        : orderData.customerEmail;
+
       const mailOptions = {
         from: `"SMART Store" <${process.env.EMAIL_USER}>`,
-        to: orderData.customerEmail,
+        to: realEmail,
         subject: this.getEmailSubject(event),
         html: this.getEmailHTML(orderData, event)
       };
+
+      console.log('📤 Sending email...');
+      console.log(`   From: ${mailOptions.from}`);
+      console.log(`   To: ${mailOptions.to} ${realEmail !== orderData.customerEmail ? '(overridden)' : ''}`);
+      console.log(`   Subject: ${mailOptions.subject}`);
 
       // ✅ GỬI EMAIL THẬT
       const info = await this.transporter.sendMail(mailOptions);
       
       console.log('✅ Email sent successfully!');
       console.log('   Message ID:', info.messageId);
+      console.log('   Response:', info.response);
       
       return {
         type: 'email',
@@ -121,6 +138,7 @@ class EmailNotificationObserver extends OrderObserver {
 
     } catch (error) {
       console.error('❌ Failed to send email:', error.message);
+      console.error('   Full error:', error);
       return {
         type: 'email',
         to: orderData.customerEmail,
@@ -309,22 +327,13 @@ class EmailNotificationObserver extends OrderObserver {
 }
 
 // ========================================
-// 📱 SMS OBSERVER - Có thể tích hợp Twilio
+// 📱 SMS OBSERVER
 // ========================================
 class SMSNotificationObserver extends OrderObserver {
   async update(orderData, event) {
     console.log('\n📱 SMS NOTIFICATION');
     console.log(`To: ${orderData.customerPhone || '0901234567'}`);
     console.log(`Message: ${this.getSMSMessage(orderData, event)}`);
-    
-    // ✅ TODO: Tích hợp Twilio để gửi SMS thật
-    // const twilio = require('twilio');
-    // const client = twilio(accountSid, authToken);
-    // await client.messages.create({
-    //   body: this.getSMSMessage(orderData, event),
-    //   from: '+1234567890',
-    //   to: orderData.customerPhone
-    // });
     
     return {
       type: 'sms',
@@ -355,16 +364,6 @@ class PushNotificationObserver extends OrderObserver {
     console.log('\n🔔 PUSH NOTIFICATION');
     console.log(`Title: ${this.getPushTitle(event)}`);
     console.log(`Body: ${this.getPushBody(orderData, event)}`);
-    
-    // ✅ TODO: Tích hợp Firebase Cloud Messaging
-    // const admin = require('firebase-admin');
-    // await admin.messaging().send({
-    //   notification: {
-    //     title: this.getPushTitle(event),
-    //     body: this.getPushBody(orderData, event)
-    //   },
-    //   token: userDeviceToken
-    // });
     
     return {
       type: 'push',
@@ -400,9 +399,6 @@ class AdminDashboardObserver extends OrderObserver {
     console.log('\n🖥️ ADMIN DASHBOARD UPDATE');
     console.log(`Event: ${event}`);
     console.log(`Order: #${orderData.orderId}`);
-    
-    // ✅ TODO: Tích hợp WebSocket để update real-time dashboard
-    // io.emit('order-update', { orderId, status, event });
     
     return {
       type: 'dashboard',
