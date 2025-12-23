@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { cartAPI, ordersAPI, vouchersAPI } from '../utils/api';
-import { FaMapMarkerAlt, FaCreditCard, FaShoppingBag, FaCheckCircle, FaTag, FaTimes, FaGift } from 'react-icons/fa';
+import { cartAPI, ordersAPI } from '../utils/api';
+import { FaMapMarkerAlt, FaCreditCard, FaCheckCircle, FaGift, FaRocket, FaShieldAlt, FaBox } from 'react-icons/fa';
 
 const Checkout = () => {
   const { user } = useAuth();
@@ -11,13 +11,6 @@ const Checkout = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [step, setStep] = useState(1);
-
-  // Voucher states
-  const [vouchers, setVouchers] = useState([]);
-  const [appliedVoucher, setAppliedVoucher] = useState(null);
-  const [voucherInput, setVoucherInput] = useState('');
-  const [voucherError, setVoucherError] = useState('');
-  const [showVouchers, setShowVouchers] = useState(false);
 
   const [shippingInfo, setShippingInfo] = useState({
     name: user?.name || '',
@@ -28,13 +21,22 @@ const Checkout = () => {
 
   const [paymentMethod, setPaymentMethod] = useState('COD');
 
+  // ========================================
+  // ✅ DECORATOR PATTERN - State cho các tính năng bổ sung
+  // ========================================
+  const [decorators, setDecorators] = useState({
+    giftWrap: false,           // Gói quà - 25,000₫
+    expressShipping: false,    // Giao nhanh - 50,000₫
+    insurance: false,          // Bảo hiểm - 2% giá trị đơn hàng
+    priorityPackaging: false   // Đóng gói chống va đập - 15,000₫
+  });
+
   useEffect(() => {
     if (!user) {
       navigate('/login');
       return;
     }
     fetchCart();
-    fetchVouchers();
   }, [user]);
 
   const fetchCart = async () => {
@@ -52,129 +54,85 @@ const Checkout = () => {
     }
   };
 
-  const fetchVouchers = async () => {
-    try {
-      const response = await vouchersAPI.getActiveVouchers();
-      setVouchers(response.data);
-    } catch (error) {
-      console.error('Error fetching vouchers:', error);
-    }
-  };
-
+  // ========================================
+  // Tính toán giá với Decorators
+  // ========================================
   const calculateSubtotal = () => {
     return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
   };
 
-  const calculateShippingFee = () => {
-    return appliedVoucher?.type === 'shipping' ? 0 : 30000;
-  };
-
-  const calculateDiscount = () => {
-    if (!appliedVoucher) return 0;
-    
+  const calculateDecoratorsCost = () => {
+    let cost = 0;
     const subtotal = calculateSubtotal();
-    
-    if (appliedVoucher.type === 'fixed') {
-      return appliedVoucher.discount;
-    } else if (appliedVoucher.type === 'percent') {
-      return Math.round(subtotal * appliedVoucher.discount / 100);
-    } else if (appliedVoucher.type === 'shipping') {
-      return 30000;
-    }
-    return 0;
+
+    if (decorators.giftWrap) cost += 25000;
+    if (decorators.expressShipping) cost += 50000;
+    if (decorators.insurance) cost += Math.round(subtotal * 0.02);
+    if (decorators.priorityPackaging) cost += 15000;
+
+    return cost;
   };
 
   const calculateTotal = () => {
-    return calculateSubtotal() + calculateShippingFee() - calculateDiscount();
+    return calculateSubtotal() + calculateDecoratorsCost();
   };
 
-  const handleApplyVoucher = async (voucher) => {
-    try {
-      const response = await vouchersAPI.applyVoucher(voucher.code, calculateSubtotal());
-      setAppliedVoucher(response.data.voucher);
-      setVoucherInput(response.data.voucher.code);
-      setVoucherError('');
-      setShowVouchers(false);
-    } catch (error) {
-      setVoucherError(error.response?.data?.message || 'Không thể áp dụng voucher');
-    }
+  // Toggle decorator
+  const toggleDecorator = (decoratorKey) => {
+    setDecorators(prev => ({
+      ...prev,
+      [decoratorKey]: !prev[decoratorKey]
+    }));
   };
 
-  const handleApplyVoucherInput = async () => {
-    if (!voucherInput.trim()) {
-      setVoucherError('Vui lòng nhập mã voucher');
-      return;
-    }
-    
-    try {
-      const response = await vouchersAPI.applyVoucher(voucherInput, calculateSubtotal());
-      setAppliedVoucher(response.data.voucher);
-      setVoucherError('');
-      setShowVouchers(false);
-    } catch (error) {
-      setVoucherError(error.response?.data?.message || 'Mã voucher không hợp lệ');
-    }
-  };
-
-  const removeVoucher = () => {
-    setAppliedVoucher(null);
-    setVoucherInput('');
-    setVoucherError('');
-  };
-
-  const handleInputChange = (e) => {
-    setShippingInfo({
-      ...shippingInfo,
-      [e.target.name]: e.target.value
-    });
-  };
-
-  const validateStep1 = () => {
+  // ========================================
+  // Submit Order với Patterns
+  // ========================================
+  const handleSubmitOrder = async () => {
     if (!shippingInfo.name || !shippingInfo.phone || !shippingInfo.address) {
       alert('Vui lòng điền đầy đủ thông tin giao hàng');
-      return false;
+      return;
     }
-    return true;
-  };
-
-  const handleNext = () => {
-    if (step === 1 && validateStep1()) {
-      setStep(2);
-    }
-  };
-
-  const handleBack = () => {
-    if (step > 1) {
-      setStep(step - 1);
-    }
-  };
-
-  const handleSubmitOrder = async () => {
-    if (!validateStep1()) return;
 
     setSubmitting(true);
     try {
+      // ✅ Chuẩn bị decorators data
+      const decoratorsArray = [];
+      if (decorators.giftWrap) {
+        decoratorsArray.push({ type: 'giftWrap', enabled: true });
+      }
+      if (decorators.expressShipping) {
+        decoratorsArray.push({ type: 'expressShipping', enabled: true });
+      }
+      if (decorators.insurance) {
+        decoratorsArray.push({ type: 'insurance', enabled: true });
+      }
+      if (decorators.priorityPackaging) {
+        decoratorsArray.push({ type: 'priorityPackaging', enabled: true });
+      }
+
       const orderData = {
         shippingAddress: {
           address: shippingInfo.address,
-          city: shippingInfo.address, // Sử dụng địa chỉ đầy đủ làm city
+          city: shippingInfo.address,
           phone: shippingInfo.phone
         },
         paymentMethod: paymentMethod,
         totalPrice: calculateTotal(),
-        voucherCode: appliedVoucher?.code || null,
-        discountAmount: calculateDiscount()
+        // ✅ GỬI DECORATORS ĐẾN BACKEND
+        decorators: decoratorsArray,
+        // ✅ GỬI PAYMENT INFO (cho Strategy Pattern)
+        paymentInfo: {}
       };
 
+      console.log('📦 Sending order with patterns:', orderData);
+
       const response = await ordersAPI.createOrder(orderData);
-      console.log('✅ Order created:', response.data);
+      console.log('✅ Order created with patterns:', response.data);
       
-      if (appliedVoucher) {
-        try {
-          await vouchersAPI.useVoucher(appliedVoucher._id);
-        } catch (error) {
-          console.error('Error updating voucher usage:', error);
-        }
+      // Hiển thị thông tin patterns từ backend
+      if (response.data.patterns) {
+        console.log('🎨 Patterns Applied:', response.data.patterns);
       }
       
       setStep(3);
@@ -190,6 +148,80 @@ const Checkout = () => {
     }
   };
 
+  // ========================================
+  // SUCCESS SCREEN
+  // ========================================
+  if (step === 3) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
+        <div className="max-w-2xl w-full bg-white rounded-lg shadow-lg p-8">
+          <div className="text-center mb-8">
+            <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce">
+              <FaCheckCircle className="text-6xl text-green-600" />
+            </div>
+            
+            <h2 className="text-3xl font-bold text-gray-800 mb-3">🎉 Đặt hàng thành công!</h2>
+            <p className="text-gray-600 text-lg">Cảm ơn bạn đã tin tưởng SMART.</p>
+          </div>
+
+          {/* Show applied decorators */}
+          {Object.values(decorators).some(v => v) && (
+            <div className="bg-purple-50 rounded-lg p-6 mb-6">
+              <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                <FaGift className="text-purple-600" />
+                Tính năng bổ sung đã chọn
+              </h3>
+              <div className="space-y-2">
+                {decorators.giftWrap && (
+                  <div className="flex items-center text-sm text-gray-700">
+                    <FaGift className="text-purple-500 mr-2" />
+                    Gói quà cao cấp (+25,000₫)
+                  </div>
+                )}
+                {decorators.expressShipping && (
+                  <div className="flex items-center text-sm text-gray-700">
+                    <FaRocket className="text-blue-500 mr-2" />
+                    Giao hàng nhanh 1-2 ngày (+50,000₫)
+                  </div>
+                )}
+                {decorators.insurance && (
+                  <div className="flex items-center text-sm text-gray-700">
+                    <FaShieldAlt className="text-green-500 mr-2" />
+                    Bảo hiểm hàng hóa (+{Math.round(calculateSubtotal() * 0.02).toLocaleString()}₫)
+                  </div>
+                )}
+                {decorators.priorityPackaging && (
+                  <div className="flex items-center text-sm text-gray-700">
+                    <FaBox className="text-orange-500 mr-2" />
+                    Đóng gói chống va đập (+15,000₫)
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div className="flex gap-4">
+            <button 
+              onClick={() => navigate('/my-orders')} 
+              className="flex-1 bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700"
+            >
+              Xem đơn hàng
+            </button>
+            <button 
+              onClick={() => navigate('/products')} 
+              className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300"
+            >
+              Tiếp tục mua
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ========================================
+  // MAIN CHECKOUT
+  // ========================================
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -201,309 +233,221 @@ const Checkout = () => {
     );
   }
 
-  if (step === 3) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
-        <div className="max-w-2xl w-full bg-white rounded-lg shadow-lg p-8">
-          <div className="text-center mb-8">
-            <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce">
-              <FaCheckCircle className="text-6xl text-green-600" />
-            </div>
-            
-            <h2 className="text-3xl font-bold text-gray-800 mb-3">🎉 Đặt hàng thành công!</h2>
-            <p className="text-gray-600 text-lg">
-              Cảm ơn bạn đã tin tưởng SMART.
-            </p>
-          </div>
-
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6 mb-6">
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
-                  <FaMapMarkerAlt className="text-blue-600" />
-                  Thông tin giao hàng
-                </h3>
-                <div className="space-y-2 text-sm text-gray-700">
-                  <p><strong>Người nhận:</strong> {shippingInfo.name}</p>
-                  <p><strong>SĐT:</strong> {shippingInfo.phone}</p>
-                  <p><strong>Địa chỉ:</strong> {shippingInfo.address}</p>
-                </div>
-              </div>
-              
-              <div>
-                <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
-                  <FaCreditCard className="text-green-600" />
-                  Thanh toán
-                </h3>
-                <div className="space-y-2 text-sm text-gray-700">
-                  <p><strong>Phương thức:</strong> {paymentMethod === 'COD' ? 'COD' : 'Chuyển khoản'}</p>
-                  {appliedVoucher && (
-                    <p className="text-green-600"><strong>Voucher:</strong> {appliedVoucher.code} (-{calculateDiscount().toLocaleString()}₫)</p>
-                  )}
-                  <p className="text-2xl font-bold text-red-600 mt-3">
-                    {calculateTotal().toLocaleString()}₫
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex gap-4">
-            <button onClick={() => navigate('/my-orders')} className="flex-1 bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors">
-              Xem đơn hàng
-            </button>
-            <button onClick={() => navigate('/products')} className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors">
-              Tiếp tục mua
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-8 text-gray-800">Thanh toán</h1>
 
-        {/* Progress */}
-        <div className="mb-8">
-          <div className="flex items-center justify-center">
-            <div className={`flex items-center ${step >= 1 ? 'text-red-600' : 'text-gray-400'}`}>
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${step >= 1 ? 'bg-red-600 text-white' : 'bg-gray-300'} font-bold`}>1</div>
-              <span className="ml-2 font-semibold hidden sm:inline">Thông tin</span>
-            </div>
-            <div className={`w-16 sm:w-24 h-1 mx-2 ${step >= 2 ? 'bg-red-600' : 'bg-gray-300'}`}></div>
-            <div className={`flex items-center ${step >= 2 ? 'text-red-600' : 'text-gray-400'}`}>
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${step >= 2 ? 'bg-red-600 text-white' : 'bg-gray-300'} font-bold`}>2</div>
-              <span className="ml-2 font-semibold hidden sm:inline">Xác nhận</span>
-            </div>
-            <div className={`w-16 sm:w-24 h-1 mx-2 ${step >= 3 ? 'bg-red-600' : 'bg-gray-300'}`}></div>
-            <div className={`flex items-center ${step >= 3 ? 'text-red-600' : 'text-gray-400'}`}>
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${step >= 3 ? 'bg-red-600 text-white' : 'bg-gray-300'} font-bold`}>3</div>
-              <span className="ml-2 font-semibold hidden sm:inline">Hoàn thành</span>
-            </div>
-          </div>
-        </div>
-
         <div className="grid lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            {step === 1 && (
-              <div className="space-y-6">
-                <div className="bg-white rounded-lg shadow p-6">
-                  <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                    <FaMapMarkerAlt className="text-red-600" />
-                    Thông tin giao hàng
-                  </h2>
-                  
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Họ tên *</label>
-                      <input type="text" name="name" value={shippingInfo.name} onChange={handleInputChange} required className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Số điện thoại *</label>
-                      <input type="tel" name="phone" value={shippingInfo.phone} onChange={handleInputChange} required className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500" />
-                    </div>
-                  </div>
-
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Địa chỉ *</label>
-                    <input type="text" name="address" value={shippingInfo.address} onChange={handleInputChange} required placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố" className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500" />
-                  </div>
-
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Ghi chú</label>
-                    <textarea name="notes" value={shippingInfo.notes} onChange={handleInputChange} rows="3" placeholder="Ghi chú về đơn hàng" className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"></textarea>
-                  </div>
+          <div className="lg:col-span-2 space-y-6">
+            {/* Shipping Info */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                <FaMapMarkerAlt className="text-red-600" />
+                Thông tin giao hàng
+              </h2>
+              
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Họ tên *</label>
+                  <input 
+                    type="text" 
+                    name="name" 
+                    value={shippingInfo.name} 
+                    onChange={(e) => setShippingInfo({...shippingInfo, name: e.target.value})}
+                    required 
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500" 
+                  />
                 </div>
-
-                {/* Voucher Section */}
-                <div className="bg-white rounded-lg shadow p-6">
-                  <h3 className="font-bold mb-4 flex items-center gap-2">
-                    <FaTag className="text-orange-600" />
-                    Mã giảm giá
-                  </h3>
-
-                  {appliedVoucher ? (
-                    <div className="bg-green-50 border-2 border-green-500 rounded-lg p-4 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <FaGift className="text-green-600 text-2xl" />
-                        <div>
-                          <p className="font-bold text-green-800">{appliedVoucher.code}</p>
-                          <p className="text-sm text-green-700">{appliedVoucher.description}</p>
-                          <p className="text-xs text-green-600 mt-1">Giảm: {calculateDiscount().toLocaleString()}₫</p>
-                        </div>
-                      </div>
-                      <button onClick={removeVoucher} className="text-red-600 hover:text-red-800">
-                        <FaTimes className="text-xl" />
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="flex gap-2 mb-3">
-                        <input
-                          type="text"
-                          value={voucherInput}
-                          onChange={(e) => setVoucherInput(e.target.value.toUpperCase())}
-                          placeholder="Nhập mã voucher"
-                          className="flex-1 border-2 border-gray-300 rounded-lg px-4 py-2 focus:border-red-500 focus:outline-none"
-                        />
-                        <button 
-                          onClick={handleApplyVoucherInput}
-                          className="bg-red-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-red-700"
-                        >
-                          Áp dụng
-                        </button>
-                      </div>
-
-                      {voucherError && (
-                        <div className="bg-red-50 border border-red-200 rounded p-3 mb-3 text-sm text-red-700">
-                          {voucherError}
-                        </div>
-                      )}
-
-                      <button 
-                        onClick={() => setShowVouchers(!showVouchers)}
-                        className="text-blue-600 text-sm font-semibold hover:underline"
-                      >
-                        {showVouchers ? 'Ẩn' : 'Xem'} danh sách voucher
-                      </button>
-
-                      {showVouchers && (
-                        <div className="mt-4 space-y-2">
-                          {vouchers.map(voucher => (
-                            <div 
-                              key={voucher._id}
-                              className="border-2 border-dashed border-orange-300 rounded-lg p-4 hover:bg-orange-50 cursor-pointer transition-colors"
-                              onClick={() => handleApplyVoucher(voucher)}
-                            >
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                  <div className="bg-orange-100 p-2 rounded">
-                                    <FaTag className="text-orange-600" />
-                                  </div>
-                                  <div>
-                                    <p className="font-bold text-orange-800">{voucher.code}</p>
-                                    <p className="text-sm text-gray-600">{voucher.description}</p>
-                                    <p className="text-xs text-gray-500 mt-1">
-                                      Còn {voucher.maxUses - voucher.usedCount} lượt
-                                    </p>
-                                  </div>
-                                </div>
-                                <button className="bg-orange-600 text-white px-4 py-1 rounded text-sm font-semibold hover:bg-orange-700">
-                                  Áp dụng
-                                </button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-
-                {/* Payment Method */}
-                <div className="bg-white rounded-lg shadow p-6">
-                  <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                    <FaCreditCard className="text-red-600" />
-                    Phương thức thanh toán
-                  </h2>
-                  
-                  <div className="space-y-3">
-                    <label className="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-red-500 transition-colors">
-                      <input type="radio" name="paymentMethod" value="COD" checked={paymentMethod === 'COD'} onChange={(e) => setPaymentMethod(e.target.value)} className="mr-3" />
-                      <div>
-                        <p className="font-semibold">💵 Thanh toán khi nhận hàng (COD)</p>
-                        <p className="text-sm text-gray-600">Thanh toán bằng tiền mặt</p>
-                      </div>
-                    </label>
-                    
-                    <label className="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-red-500 transition-colors">
-                      <input type="radio" name="paymentMethod" value="BANK" checked={paymentMethod === 'BANK'} onChange={(e) => setPaymentMethod(e.target.value)} className="mr-3" />
-                      <div>
-                        <p className="font-semibold">🏦 Chuyển khoản ngân hàng</p>
-                        <p className="text-sm text-gray-600">Chuyển khoản qua QR hoặc số tài khoản</p>
-                      </div>
-                    </label>
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Số điện thoại *</label>
+                  <input 
+                    type="tel" 
+                    name="phone" 
+                    value={shippingInfo.phone} 
+                    onChange={(e) => setShippingInfo({...shippingInfo, phone: e.target.value})}
+                    required 
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500" 
+                  />
                 </div>
               </div>
-            )}
 
-            {step === 2 && (
-              <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-                  <FaShoppingBag className="text-red-600" />
-                  Xác nhận đơn hàng
-                </h2>
-
-                <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                  <h3 className="font-semibold mb-3">Thông tin giao hàng</h3>
-                  <div className="text-sm space-y-1 text-gray-700">
-                    <p><strong>Người nhận:</strong> {shippingInfo.name}</p>
-                    <p><strong>SĐT:</strong> {shippingInfo.phone}</p>
-                    <p><strong>Địa chỉ:</strong> {shippingInfo.address}</p>
-                  </div>
-                </div>
-
-                <div className="mb-6">
-                  <h3 className="font-semibold mb-3">Sản phẩm</h3>
-                  <div className="space-y-3">
-                    {cartItems.map((item) => (
-                      <div key={item.product._id} className="flex gap-3 p-3 border rounded">
-                        <img src={item.product.image || item.image} alt={item.product.name} className="w-16 h-16 object-cover rounded" />
-                        <div className="flex-grow">
-                          <p className="font-medium text-sm">{item.product.name || item.name}</p>
-                          <p className="text-sm text-gray-600">SL: {item.quantity}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-bold text-red-600">{((item.price || item.product.price) * item.quantity).toLocaleString()}₫</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="p-4 bg-blue-50 rounded-lg">
-                  <p className="text-sm text-gray-700"><strong>Thanh toán:</strong> {paymentMethod === 'COD' ? 'COD' : 'Chuyển khoản'}</p>
-                  {appliedVoucher && (
-                    <p className="text-sm text-green-700 mt-1"><strong>Voucher:</strong> {appliedVoucher.code} (Giảm {calculateDiscount().toLocaleString()}₫)</p>
-                  )}
-                </div>
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Địa chỉ *</label>
+                <input 
+                  type="text" 
+                  name="address" 
+                  value={shippingInfo.address} 
+                  onChange={(e) => setShippingInfo({...shippingInfo, address: e.target.value})}
+                  required 
+                  placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố" 
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500" 
+                />
               </div>
-            )}
-
-            <div className="flex gap-4 mt-6">
-              {step > 1 && <button onClick={handleBack} className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300">Quay lại</button>}
-              {step === 1 && <button onClick={handleNext} className="flex-1 bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700">Tiếp tục</button>}
-              {step === 2 && <button onClick={handleSubmitOrder} disabled={submitting} className="flex-1 bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 disabled:opacity-50">{submitting ? 'Đang xử lý...' : 'Đặt hàng'}</button>}
             </div>
+
+            {/* ========================================
+                ✅ DECORATOR PATTERN - Chọn tính năng bổ sung
+                ======================================== */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                <FaGift className="text-purple-600" />
+                Tính năng bổ sung
+              </h2>
+
+              <div className="space-y-3">
+                {/* Gift Wrap */}
+                <label className="flex items-start p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-purple-500 transition-colors">
+                  <input 
+                    type="checkbox" 
+                    checked={decorators.giftWrap}
+                    onChange={() => toggleDecorator('giftWrap')}
+                    className="mr-3 mt-1" 
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <FaGift className="text-purple-500" />
+                      <p className="font-semibold">Gói quà cao cấp</p>
+                      <span className="ml-auto text-purple-600 font-bold">+25,000₫</span>
+                    </div>
+                    <p className="text-sm text-gray-600 mt-1">Gói quà đẹp mắt, sang trọng</p>
+                  </div>
+                </label>
+
+                {/* Express Shipping */}
+                <label className="flex items-start p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
+                  <input 
+                    type="checkbox" 
+                    checked={decorators.expressShipping}
+                    onChange={() => toggleDecorator('expressShipping')}
+                    className="mr-3 mt-1" 
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <FaRocket className="text-blue-500" />
+                      <p className="font-semibold">Giao hàng nhanh</p>
+                      <span className="ml-auto text-blue-600 font-bold">+50,000₫</span>
+                    </div>
+                    <p className="text-sm text-gray-600 mt-1">Giao trong 1-2 ngày</p>
+                  </div>
+                </label>
+
+                {/* Insurance */}
+                <label className="flex items-start p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-green-500 transition-colors">
+                  <input 
+                    type="checkbox" 
+                    checked={decorators.insurance}
+                    onChange={() => toggleDecorator('insurance')}
+                    className="mr-3 mt-1" 
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <FaShieldAlt className="text-green-500" />
+                      <p className="font-semibold">Bảo hiểm hàng hóa</p>
+                      <span className="ml-auto text-green-600 font-bold">
+                        +{Math.round(calculateSubtotal() * 0.02).toLocaleString()}₫
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600 mt-1">Bảo hiểm 2% giá trị đơn hàng</p>
+                  </div>
+                </label>
+
+                {/* Priority Packaging */}
+                <label className="flex items-start p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-orange-500 transition-colors">
+                  <input 
+                    type="checkbox" 
+                    checked={decorators.priorityPackaging}
+                    onChange={() => toggleDecorator('priorityPackaging')}
+                    className="mr-3 mt-1" 
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <FaBox className="text-orange-500" />
+                      <p className="font-semibold">Đóng gói chống va đập</p>
+                      <span className="ml-auto text-orange-600 font-bold">+15,000₫</span>
+                    </div>
+                    <p className="text-sm text-gray-600 mt-1">Đóng gói cẩn thận, an toàn</p>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            {/* Payment Method */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                <FaCreditCard className="text-red-600" />
+                Phương thức thanh toán
+              </h2>
+              
+              <div className="space-y-3">
+                <label className="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-red-500">
+                  <input 
+                    type="radio" 
+                    name="paymentMethod" 
+                    value="COD" 
+                    checked={paymentMethod === 'COD'} 
+                    onChange={(e) => setPaymentMethod(e.target.value)} 
+                    className="mr-3" 
+                  />
+                  <div>
+                    <p className="font-semibold">💵 Thanh toán khi nhận hàng (COD)</p>
+                    <p className="text-sm text-gray-600">Thanh toán bằng tiền mặt</p>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <button
+              onClick={handleSubmitOrder}
+              disabled={submitting}
+              className="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 disabled:opacity-50"
+            >
+              {submitting ? 'Đang xử lý...' : 'Đặt hàng'}
+            </button>
           </div>
 
+          {/* Summary */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow p-6 sticky top-4">
               <h2 className="text-xl font-bold mb-4">Tóm tắt đơn hàng</h2>
+              
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between text-gray-600">
                   <span>Tạm tính ({cartItems.length})</span>
                   <span className="font-semibold">{calculateSubtotal().toLocaleString()}₫</span>
                 </div>
-                <div className="flex justify-between text-gray-600">
-                  <span>Phí vận chuyển</span>
-                  <span className={`font-semibold ${calculateShippingFee() === 0 ? 'text-green-600' : ''}`}>
-                    {calculateShippingFee() === 0 ? 'Miễn phí' : `${calculateShippingFee().toLocaleString()}₫`}
-                  </span>
-                </div>
-                {appliedVoucher && (
-                  <div className="flex justify-between text-green-600">
-                    <span className="flex items-center gap-1">
-                      <FaTag />
-                      Giảm giá
-                    </span>
-                    <span className="font-semibold">-{calculateDiscount().toLocaleString()}₫</span>
+
+                {/* Show decorator costs */}
+                {Object.entries(decorators).some(([_, enabled]) => enabled) && (
+                  <div className="border-t pt-3">
+                    <p className="text-sm font-semibold text-purple-700 mb-2">Tính năng bổ sung:</p>
+                    {decorators.giftWrap && (
+                      <div className="flex justify-between text-sm text-gray-600">
+                        <span>🎁 Gói quà</span>
+                        <span>+25,000₫</span>
+                      </div>
+                    )}
+                    {decorators.expressShipping && (
+                      <div className="flex justify-between text-sm text-gray-600">
+                        <span>🚀 Giao nhanh</span>
+                        <span>+50,000₫</span>
+                      </div>
+                    )}
+                    {decorators.insurance && (
+                      <div className="flex justify-between text-sm text-gray-600">
+                        <span>🛡️ Bảo hiểm</span>
+                        <span>+{Math.round(calculateSubtotal() * 0.02).toLocaleString()}₫</span>
+                      </div>
+                    )}
+                    {decorators.priorityPackaging && (
+                      <div className="flex justify-between text-sm text-gray-600">
+                        <span>📦 Đóng gói đặc biệt</span>
+                        <span>+15,000₫</span>
+                      </div>
+                    )}
                   </div>
                 )}
+                
                 <div className="border-t pt-3 flex justify-between text-lg font-bold">
                   <span>Tổng</span>
                   <span className="text-red-600">{calculateTotal().toLocaleString()}₫</span>
