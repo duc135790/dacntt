@@ -50,7 +50,6 @@ if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
 import productRoutes from './routes/productRoutes.js';
 import customerRoutes from './routes/customerRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
-import orderRoutesV2 from './routes/orderRoutesV2.js';
 import voucherRoutes from './routes/voucherRoutes.js';
 
 // Kết nối Database
@@ -95,9 +94,7 @@ console.log('  ✅ /api/products registered');
 app.use('/api/customers', customerRoutes);
 console.log('  ✅ /api/customers registered');
 app.use('/api/orders', orderRoutes);
-console.log('  ✅ /api/orders registered');
-app.use('/api/orders', orderRoutesV2);
-console.log('  ✅ /api/orders (v2 with patterns) registered');
+console.log('  ✅ /api/orders registered (includes all patterns)');
 app.use('/api/vouchers', voucherRoutes);
 console.log('  ✅ /api/vouchers registered');
 
@@ -145,8 +142,8 @@ app.listen(PORT, () => {
     console.log(`✅ API routes available at http://localhost:${PORT}/api`);
     console.log(`\n🎨 Design Patterns Endpoints:`);
     console.log(`   📍 GET  /api/orders/demo-patterns - Demo all patterns`);
-    console.log(`   📍 POST /api/orders/v2 - Create order with patterns`);
+    console.log(`   📍 POST /api/orders - Create order with patterns`);
     console.log(`   📍 GET  /api/orders/payment-methods - Strategy pattern demo`);
-    console.log(`   📍 PUT  /api/orders/v2/:id/status - Observer pattern demo`);
+    console.log(`   📍 PUT  /api/orders/:id/status - Observer pattern demo`);
     console.log(`   📍 GET  /api/orders/cart-stats - Singleton pattern demo\n`);
 });

@@ -154,7 +154,10 @@ const Admin = () => {
               <div>
                 <p className="text-gray-500 text-sm mb-1">Doanh thu</p>
                 <p className="text-3xl font-bold text-gray-800">
-                  {orders.reduce((sum, order) => sum + order.totalPrice, 0).toLocaleString()}đ
+                  {orders
+                    .filter(order => order.orderStatus !== 'Đã hủy')
+                    .reduce((sum, order) => sum + (order.totalPrice || 0), 0)
+                    .toLocaleString()}đ
                 </p>
               </div>
               <div className="text-5xl opacity-50">💰</div>

@@ -420,11 +420,192 @@ const cancelOrder = async (req, res) => {
   });
 };
 
+/**
+ * ========================================
+ * 🎯 Lấy các phương thức thanh toán (Strategy Pattern)
+ * ========================================
+ */
+const getPaymentMethods = async (req, res) => {
+  try {
+    console.log('\n💳 Getting available payment methods using Strategy Pattern');
+    
+    const methods = PaymentStrategyFactory.getAllMethods();
+
+    res.json({
+      success: true,
+      methods: methods,
+      default: 'COD'
+    });
+
+  } catch (error) {
+    console.error('❌ Error getting payment methods:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+/**
+ * ========================================
+ * 🎯 Lấy thống kê giỏ hàng (Singleton Pattern)
+ * ========================================
+ */
+const getCartStats = async (req, res) => {
+  try {
+    console.log('\n📊 Getting cart statistics using Singleton Pattern');
+    
+    const stats = cartManager.getCartStats();
+
+    res.json({
+      success: true,
+      stats: stats
+    });
+
+  } catch (error) {
+    console.error('❌ Error getting cart stats:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+/**
+ * ========================================
+ * 🎯 Demo tất cả Design Patterns
+ * ========================================
+ */
+const demoAllPatterns = async (req, res) => {
+  try {
+    console.log('\n🎯 DEMO: ALL DESIGN PATTERNS\n');
+
+    // 1. ABSTRACT FACTORY
+    console.log('1️⃣ ABSTRACT FACTORY PATTERN');
+    const bookProduct = ProductFactoryProducer.createProduct({
+      name: 'Clean Code',
+      price: 150000,
+      category: 'Văn học',
+      author: 'Robert Martin'
+    });
+    console.log('Book:', bookProduct.getDetails());
+    console.log('Shipping:', bookProduct.calculateShipping());
+
+    // 2. DECORATOR
+    console.log('\n2️⃣ DECORATOR PATTERN');
+    const { OrderComponent, GiftWrapDecorator, ExpressShippingDecorator } = 
+      await import('../patterns/Decorator.js');
+    
+    let order = new OrderComponent({ totalPrice: 500000, orderItems: [] });
+    console.log('Base order:', order.getDetails());
+    
+    order = new GiftWrapDecorator(order);
+    order = new ExpressShippingDecorator(order);
+    console.log('Decorated order:', order.getDetails());
+
+    // 3. STRATEGY
+    console.log('\n3️⃣ STRATEGY PATTERN');
+    const codStrategy = PaymentStrategyFactory.createStrategy('COD');
+    const processor = new PaymentProcessor(codStrategy);
+    const payment = processor.processPayment(500000, { orderId: '123' });
+    console.log('Payment:', payment);
+
+    // 4. OBSERVER
+    console.log('\n4️⃣ OBSERVER PATTERN');
+    const { Order: ObserverOrder } = await import('../patterns/Observer.js');
+    const observerOrder = new ObserverOrder({
+      _id: '123',
+      totalPrice: 500000,
+      user: { name: 'Test User', email: 'test@example.com' }
+    });
+    
+    notificationManager.attachDefaultObservers(observerOrder);
+    observerOrder.setStatus('Đã xác nhận');
+
+    // 5. SINGLETON
+    console.log('\n5️⃣ SINGLETON PATTERN');
+    const cart1 = CartManager.getInstance();
+    const cart2 = CartManager.getInstance();
+    console.log('Same instance?', cart1 === cart2);
+    console.log('Stats:', cart1.getCartStats());
+
+    res.json({
+      success: true,
+      message: 'Demo completed! Check console for details',
+      patterns: {
+        abstractFactory: 'Created different product types',
+        decorator: 'Added gift wrap and express shipping',
+        strategy: 'Processed COD payment',
+        observer: 'Sent notifications on status change',
+        singleton: 'CartManager is a singleton'
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error in demo:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+/**
+ * ========================================
+ * 🎯 Cập nhật trạng thái đơn hàng với Observer (Version mới)
+ * ========================================
+ */
+const updateOrderStatusWithObserver = async (req, res) => {
+  try {
+    const { status } = req.body;
+    const order = await Order.findById(req.params.id).populate('user', 'name email');
+
+    if (!order) {
+      return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
+    }
+
+    // OBSERVER PATTERN - Thông báo khi thay đổi trạng thái
+    console.log('\n📢 Using Observer Pattern for status update');
+    
+    const orderObserver = notificationManager.createOrder({
+      _id: order._id,
+      orderId: order._id,
+      status: status,
+      totalPrice: order.totalPrice,
+      user: order.user,
+      shippingAddress: order.shippingAddress,
+      customerName: order.user.name,
+      customerEmail: order.user.email,
+      customerPhone: order.shippingAddress.phone
+    });
+
+    // Update status (this triggers notifications)
+    orderObserver.setStatus(status);
+
+    // Update in database
+    order.orderStatus = status;
+    if (status === 'Đã giao') {
+      order.isDelivered = true;
+      order.deliveredAt = Date.now();
+    }
+    
+    const updatedOrder = await order.save();
+
+    res.json({
+      success: true,
+      message: 'Cập nhật trạng thái thành công',
+      order: updatedOrder,
+      notifications: {
+        sent: ['email', 'sms', 'push', 'dashboard']
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error updating order status:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
 export { 
   addOrderItems, 
   getMyOrders, 
   getOrders, 
   updateOrderToDelivered, 
   getOrderById, 
-  cancelOrder 
+  cancelOrder,
+  getPaymentMethods,
+  getCartStats,
+  demoAllPatterns,
+  updateOrderStatusWithObserver
 };

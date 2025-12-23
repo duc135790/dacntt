@@ -1,23 +1,49 @@
 import express from 'express';
 const router = express.Router();
-import { addOrderItems, getMyOrders, getOrders, updateOrderToDelivered, getOrderById, cancelOrder} from '../controllers/orderController.js';
+import { 
+  addOrderItems, 
+  getMyOrders, 
+  getOrders, 
+  updateOrderToDelivered, 
+  getOrderById, 
+  cancelOrder,
+  getPaymentMethods,
+  getCartStats,
+  demoAllPatterns,
+  updateOrderStatusWithObserver
+} from '../controllers/orderController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
-//route cua admin
+
+// ========================================
+// PUBLIC ROUTES (Không cần đăng nhập)
+// ========================================
+router.get('/payment-methods', getPaymentMethods);
+router.get('/demo-patterns', demoAllPatterns);
+
+// ========================================
+// ADMIN ROUTES (Cần admin)
+// ========================================
+router.get('/cart-stats', protect, admin, getCartStats);
+router.put('/:id/deliver', protect, admin, updateOrderToDelivered);
+router.put('/:id/status', protect, admin, updateOrderStatusWithObserver);
+
+// ========================================
+// USER & ADMIN ROUTES
+// ========================================
 router
   .route('/')
-  .post(protect, addOrderItems) // (ham nay user cung dung)
-  .get(protect, admin, getOrders); // (chi admin)
-  
-//route cua user
+  .post(protect, addOrderItems) // User tạo đơn hàng
+  .get(protect, admin, getOrders); // Admin xem tất cả đơn hàng
+
+// ========================================
+// USER ROUTES (Cần đăng nhập)
+// ========================================
 router.get('/myorders', protect, getMyOrders);
+router.delete('/:id', protect, cancelOrder); // Hủy đơn hàng (phải đặt trước /:id)
 
-//route cap nhat cau admin (phai dat truoc /:id)
-router.put('/:id/deliver', protect, admin, updateOrderToDelivered);
-
-//route huy don hang (phai dat truoc /:id de tranh xung dot)
-router.delete('/:id', protect, cancelOrder);
-
-//route chung(co bao mat ben trong) - dat cuoi cung
+// ========================================
+// ROUTE CHUNG (Có bảo mật bên trong) - Đặt cuối cùng
+// ========================================
 router.get('/:id', protect, getOrderById);
 
 export default router;
