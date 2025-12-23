@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { cartAPI, ordersAPI } from '../utils/api';
-import { FaMapMarkerAlt, FaCreditCard, FaCheckCircle, FaGift, FaRocket, FaShieldAlt, FaBox } from 'react-icons/fa';
+import { FaMapMarkerAlt, FaCreditCard, FaCheckCircle, FaGift, FaRocket, FaShieldAlt, FaBox, FaBook, FaLaptop, FaTshirt } from 'react-icons/fa';
 
 const Checkout = () => {
   const { user } = useAuth();
@@ -25,10 +25,10 @@ const Checkout = () => {
   // ✅ DECORATOR PATTERN - State cho các tính năng bổ sung
   // ========================================
   const [decorators, setDecorators] = useState({
-    giftWrap: false,           // Gói quà - 25,000₫
-    expressShipping: false,    // Giao nhanh - 50,000₫
-    insurance: false,          // Bảo hiểm - 2% giá trị đơn hàng
-    priorityPackaging: false   // Đóng gói chống va đập - 15,000₫
+    giftWrap: false,
+    expressShipping: false,
+    insurance: false,
+    priorityPackaging: false
   });
 
   useEffect(() => {
@@ -55,12 +55,35 @@ const Checkout = () => {
   };
 
   // ========================================
-  // Tính toán giá với Decorators
+  // 🏭 ABSTRACT FACTORY - Tính shipping fee theo loại sản phẩm
   // ========================================
+  const getProductType = (category) => {
+    const cat = category?.toLowerCase() || '';
+    if (cat.includes('văn học') || cat.includes('sách') || cat.includes('book')) {
+      return { type: 'Book', icon: FaBook, color: 'blue', shippingFee: 15000 };
+    } else if (cat.includes('điện tử') || cat.includes('electronic')) {
+      return { type: 'Electronic', icon: FaLaptop, color: 'purple', shippingFee: 30000 };
+    } else if (cat.includes('quần áo') || cat.includes('thời trang') || cat.includes('clothing')) {
+      return { type: 'Clothing', icon: FaTshirt, color: 'pink', shippingFee: 20000 };
+    }
+    return { type: 'Other', icon: FaBox, color: 'gray', shippingFee: 15000 };
+  };
+
+  const calculateShippingFee = () => {
+    return cartItems.reduce((sum, item) => {
+      const productType = getProductType(item.product?.category || item.product?.brand);
+      return sum + (productType.shippingFee * item.quantity);
+    }, 0);
+  };
+
+  // Tính toán giá
   const calculateSubtotal = () => {
     return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
   };
 
+  // ========================================
+  // 🎨 DECORATOR PATTERN - Tính chi phí tính năng bổ sung
+  // ========================================
   const calculateDecoratorsCost = () => {
     let cost = 0;
     const subtotal = calculateSubtotal();
@@ -74,10 +97,9 @@ const Checkout = () => {
   };
 
   const calculateTotal = () => {
-    return calculateSubtotal() + calculateDecoratorsCost();
+    return calculateSubtotal() + calculateShippingFee() + calculateDecoratorsCost();
   };
 
-  // Toggle decorator
   const toggleDecorator = (decoratorKey) => {
     setDecorators(prev => ({
       ...prev,
@@ -86,7 +108,7 @@ const Checkout = () => {
   };
 
   // ========================================
-  // Submit Order với Patterns
+  // 💳 STRATEGY PATTERN - Submit Order
   // ========================================
   const handleSubmitOrder = async () => {
     if (!shippingInfo.name || !shippingInfo.phone || !shippingInfo.address) {
@@ -96,20 +118,12 @@ const Checkout = () => {
 
     setSubmitting(true);
     try {
-      // ✅ Chuẩn bị decorators data
+      // Chuẩn bị decorators data
       const decoratorsArray = [];
-      if (decorators.giftWrap) {
-        decoratorsArray.push({ type: 'giftWrap', enabled: true });
-      }
-      if (decorators.expressShipping) {
-        decoratorsArray.push({ type: 'expressShipping', enabled: true });
-      }
-      if (decorators.insurance) {
-        decoratorsArray.push({ type: 'insurance', enabled: true });
-      }
-      if (decorators.priorityPackaging) {
-        decoratorsArray.push({ type: 'priorityPackaging', enabled: true });
-      }
+      if (decorators.giftWrap) decoratorsArray.push({ type: 'giftWrap', enabled: true });
+      if (decorators.expressShipping) decoratorsArray.push({ type: 'expressShipping', enabled: true });
+      if (decorators.insurance) decoratorsArray.push({ type: 'insurance', enabled: true });
+      if (decorators.priorityPackaging) decoratorsArray.push({ type: 'priorityPackaging', enabled: true });
 
       const orderData = {
         shippingAddress: {
@@ -119,21 +133,12 @@ const Checkout = () => {
         },
         paymentMethod: paymentMethod,
         totalPrice: calculateTotal(),
-        // ✅ GỬI DECORATORS ĐẾN BACKEND
         decorators: decoratorsArray,
-        // ✅ GỬI PAYMENT INFO (cho Strategy Pattern)
         paymentInfo: {}
       };
 
-      console.log('📦 Sending order with patterns:', orderData);
-
       const response = await ordersAPI.createOrder(orderData);
-      console.log('✅ Order created with patterns:', response.data);
-      
-      // Hiển thị thông tin patterns từ backend
-      if (response.data.patterns) {
-        console.log('🎨 Patterns Applied:', response.data.patterns);
-      }
+      console.log('✅ Order created:', response.data);
       
       setStep(3);
       
@@ -164,12 +169,12 @@ const Checkout = () => {
             <p className="text-gray-600 text-lg">Cảm ơn bạn đã tin tưởng SMART.</p>
           </div>
 
-          {/* Show applied decorators */}
+          {/* Hiển thị tính năng đã chọn */}
           {Object.values(decorators).some(v => v) && (
             <div className="bg-purple-50 rounded-lg p-6 mb-6">
               <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
                 <FaGift className="text-purple-600" />
-                Tính năng bổ sung đã chọn
+                🎨 Tính năng bổ sung đã chọn (Decorator Pattern)
               </h3>
               <div className="space-y-2">
                 {decorators.giftWrap && (
@@ -252,10 +257,8 @@ const Checkout = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Họ tên *</label>
                   <input 
                     type="text" 
-                    name="name" 
                     value={shippingInfo.name} 
                     onChange={(e) => setShippingInfo({...shippingInfo, name: e.target.value})}
-                    required 
                     className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500" 
                   />
                 </div>
@@ -263,10 +266,8 @@ const Checkout = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Số điện thoại *</label>
                   <input 
                     type="tel" 
-                    name="phone" 
                     value={shippingInfo.phone} 
                     onChange={(e) => setShippingInfo({...shippingInfo, phone: e.target.value})}
-                    required 
                     className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500" 
                   />
                 </div>
@@ -276,27 +277,72 @@ const Checkout = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Địa chỉ *</label>
                 <input 
                   type="text" 
-                  name="address" 
                   value={shippingInfo.address} 
                   onChange={(e) => setShippingInfo({...shippingInfo, address: e.target.value})}
-                  required 
                   placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố" 
                   className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500" 
                 />
               </div>
             </div>
 
-            {/* ========================================
-                ✅ DECORATOR PATTERN - Chọn tính năng bổ sung
-                ======================================== */}
+            {/* 🏭 ABSTRACT FACTORY - Hiển thị shipping fee theo loại sản phẩm */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                🏭 Phí vận chuyển theo loại sản phẩm
+                <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded">Abstract Factory</span>
+              </h2>
+              
+              <div className="space-y-3">
+                {cartItems.map((item) => {
+                  const productType = getProductType(item.product?.category || item.product?.brand);
+                  const ProductIcon = productType.icon;
+                  
+                  return (
+                    <div key={item.product._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <ProductIcon className={`text-${productType.color}-500 text-xl`} />
+                        <div>
+                          <p className="font-medium text-sm">{item.name}</p>
+                          <p className="text-xs text-gray-500">
+                            {productType.type} • SL: {item.quantity}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-bold text-blue-600">
+                          {productType.shippingFee.toLocaleString()}₫ × {item.quantity}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          = {(productType.shippingFee * item.quantity).toLocaleString()}₫
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="mt-4 p-3 bg-blue-50 rounded-lg border-l-4 border-blue-500">
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold">Tổng phí vận chuyển:</span>
+                  <span className="text-xl font-bold text-blue-600">
+                    {calculateShippingFee().toLocaleString()}₫
+                  </span>
+                </div>
+                <p className="text-xs text-gray-600 mt-1">
+                  Sách: 15,000₫ | Điện tử: 30,000₫ | Quần áo: 20,000₫
+                </p>
+              </div>
+            </div>
+
+            {/* 🎨 DECORATOR PATTERN - Tính năng bổ sung */}
             <div className="bg-white rounded-lg shadow p-6">
               <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
                 <FaGift className="text-purple-600" />
                 Tính năng bổ sung
+                <span className="text-xs bg-purple-100 text-purple-600 px-2 py-1 rounded">Decorator Pattern</span>
               </h2>
 
               <div className="space-y-3">
-                {/* Gift Wrap */}
                 <label className="flex items-start p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-purple-500 transition-colors">
                   <input 
                     type="checkbox" 
@@ -314,7 +360,6 @@ const Checkout = () => {
                   </div>
                 </label>
 
-                {/* Express Shipping */}
                 <label className="flex items-start p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
                   <input 
                     type="checkbox" 
@@ -332,7 +377,6 @@ const Checkout = () => {
                   </div>
                 </label>
 
-                {/* Insurance */}
                 <label className="flex items-start p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-green-500 transition-colors">
                   <input 
                     type="checkbox" 
@@ -352,7 +396,6 @@ const Checkout = () => {
                   </div>
                 </label>
 
-                {/* Priority Packaging */}
                 <label className="flex items-start p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-orange-500 transition-colors">
                   <input 
                     type="checkbox" 
@@ -372,11 +415,12 @@ const Checkout = () => {
               </div>
             </div>
 
-            {/* Payment Method */}
+            {/* 💳 STRATEGY PATTERN - Payment Method */}
             <div className="bg-white rounded-lg shadow p-6">
               <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
                 <FaCreditCard className="text-red-600" />
                 Phương thức thanh toán
+                <span className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded">Strategy Pattern</span>
               </h2>
               
               <div className="space-y-3">
@@ -417,31 +461,41 @@ const Checkout = () => {
                   <span className="font-semibold">{calculateSubtotal().toLocaleString()}₫</span>
                 </div>
 
-                {/* Show decorator costs */}
-                {Object.entries(decorators).some(([_, enabled]) => enabled) && (
-                  <div className="border-t pt-3">
-                    <p className="text-sm font-semibold text-purple-700 mb-2">Tính năng bổ sung:</p>
+                {/* 🏭 ABSTRACT FACTORY - Shipping Fee */}
+                <div className="flex justify-between text-gray-600 bg-blue-50 p-2 rounded">
+                  <span className="flex items-center gap-1 text-sm">
+                    🏭 Phí vận chuyển
+                  </span>
+                  <span className="font-semibold text-blue-600">
+                    {calculateShippingFee().toLocaleString()}₫
+                  </span>
+                </div>
+
+                {/* 🎨 DECORATOR - Extras */}
+                {Object.values(decorators).some(v => v) && (
+                  <div className="bg-purple-50 p-3 rounded">
+                    <p className="text-xs font-semibold text-purple-700 mb-2">🎨 Tính năng bổ sung:</p>
                     {decorators.giftWrap && (
-                      <div className="flex justify-between text-sm text-gray-600">
+                      <div className="flex justify-between text-xs mb-1">
                         <span>🎁 Gói quà</span>
                         <span>+25,000₫</span>
                       </div>
                     )}
                     {decorators.expressShipping && (
-                      <div className="flex justify-between text-sm text-gray-600">
+                      <div className="flex justify-between text-xs mb-1">
                         <span>🚀 Giao nhanh</span>
                         <span>+50,000₫</span>
                       </div>
                     )}
                     {decorators.insurance && (
-                      <div className="flex justify-between text-sm text-gray-600">
+                      <div className="flex justify-between text-xs mb-1">
                         <span>🛡️ Bảo hiểm</span>
                         <span>+{Math.round(calculateSubtotal() * 0.02).toLocaleString()}₫</span>
                       </div>
                     )}
                     {decorators.priorityPackaging && (
-                      <div className="flex justify-between text-sm text-gray-600">
-                        <span>📦 Đóng gói đặc biệt</span>
+                      <div className="flex justify-between text-xs">
+                        <span>📦 Đóng gói</span>
                         <span>+15,000₫</span>
                       </div>
                     )}
