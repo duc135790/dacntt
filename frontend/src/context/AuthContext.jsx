@@ -1,5 +1,5 @@
 import { createContext, useState, useEffect, useContext } from 'react';
-import { authAPI } from '../utils/api';
+import { authAPI, cartAPI } from '../utils/api';
 
 const AuthContext = createContext();
 
@@ -14,6 +14,7 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [cartCount, setCartCount] = useState(0);
 
   useEffect(() => {
     // Load user từ localStorage khi app khởi động
@@ -38,6 +39,30 @@ export const AuthProvider = ({ children }) => {
 
     loadUser();
   }, []);
+
+  // Đồng bộ số lượng sản phẩm trong giỏ theo user hiện tại
+  useEffect(() => {
+    const fetchCartCount = async () => {
+      if (!user) {
+        setCartCount(0);
+        return;
+      }
+
+      try {
+        const response = await cartAPI.getCart();
+        const count = (response.data || []).reduce(
+          (sum, item) => sum + (item.quantity || 0),
+          0
+        );
+        setCartCount(count);
+      } catch (error) {
+        console.error('❌ Error fetching cart count:', error);
+        setCartCount(0);
+      }
+    };
+
+    fetchCartCount();
+  }, [user]);
 
   const login = async (email, password) => {
     try {
@@ -95,11 +120,22 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setUser(null);
+    setCartCount(0);
     console.log('👋 User logged out');
   };
 
   // ✅ Tính isAdmin từ user state
   const isAdmin = user?.isAdmin === true;
+
+  // Cho phép các component khác (ví dụ: Cart) đồng bộ lại cartCount
+  const updateCartCountFromItems = (items) => {
+    const safeItems = Array.isArray(items) ? items : [];
+    const count = safeItems.reduce(
+      (sum, item) => sum + (item.quantity || 0),
+      0
+    );
+    setCartCount(count);
+  };
 
   const value = {
     user,
@@ -107,7 +143,9 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     loading,
-    isAdmin
+    isAdmin,
+    cartCount,
+    updateCartCountFromItems
   };
 
   return (

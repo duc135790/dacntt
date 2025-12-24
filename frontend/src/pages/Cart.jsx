@@ -5,7 +5,7 @@ import { cartAPI } from '../utils/api';
 import { FaShoppingCart, FaTrash, FaMinus, FaPlus, FaArrowLeft } from 'react-icons/fa';
 
 const Cart = () => {
-  const { user } = useAuth();
+  const { user, updateCartCountFromItems } = useAuth();
   const navigate = useNavigate();
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,6 +24,7 @@ const Cart = () => {
       const response = await cartAPI.getCart();
       console.log('📦 Cart data:', response.data);
       setCartItems(response.data);
+      updateCartCountFromItems(response.data);
     } catch (error) {
       console.error('❌ Error fetching cart:', error);
     } finally {
@@ -48,6 +49,7 @@ const Cart = () => {
     try {
       const response = await cartAPI.updateCartItem(productId, newQuantity);
       setCartItems(response.data);
+      updateCartCountFromItems(response.data);
     } catch (error) {
       console.error('Error updating quantity:', error);
       alert(error.response?.data?.message || 'Cập nhật số lượng thất bại');
@@ -63,6 +65,7 @@ const Cart = () => {
     try {
       const response = await cartAPI.removeFromCart(productId);
       setCartItems(response.data);
+      updateCartCountFromItems(response.data);
     } catch (error) {
       console.error('Error removing item:', error);
       alert('Xóa sản phẩm thất bại');

@@ -1,38 +1,19 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { cartAPI, productsAPI } from '../utils/api';
+import { productsAPI } from '../utils/api';
 import { FaSearch, FaShoppingCart, FaUser, FaSignOutAlt, FaShoppingBag, FaCog } from 'react-icons/fa';
 
 const Navbar = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, cartCount } = useAuth();
   const navigate = useNavigate();
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
-  const [cartCount, setCartCount] = useState(0);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const dropdownRef = useRef(null);
 
   console.log('🔍 Navbar - User:', user);
-
-  // Fetch cart count
-  useEffect(() => {
-    if (user) {
-      const fetchCartCount = async () => {
-        try {
-          const response = await cartAPI.getCart();
-          const count = response.data.reduce((sum, item) => sum + item.quantity, 0);
-          setCartCount(count);
-        } catch (error) {
-          console.error('❌ Error fetching cart:', error);
-        }
-      };
-      fetchCartCount();
-    } else {
-      setCartCount(0);
-    }
-  }, [user]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
