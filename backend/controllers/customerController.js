@@ -1,6 +1,8 @@
 import Customer from "../models/customerModel.js";
 import generateToken from "../utils/generateToken.js";
 import Product from '../models/productModel.js';
+import { sendResetPasswordEmail } from '../utils/sendEmail.js';
+import crypto from 'crypto';
 
 //@desc dang ky khach hang moi
 //@route POST/api/customers
@@ -283,6 +285,124 @@ const clearCart = async(req, res)=>{
     }
 };
 
+// @desc    Gửi mã xác nhận qua email để đặt lại mật khẩu
+// @route   POST /api/customers/forgot-password
+// @access  Public
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: 'Vui lòng nhập email' });
+    }
+
+    const customer = await Customer.findOne({ email });
+
+    if (!customer) {
+      // Không tiết lộ email có tồn tại hay không (bảo mật)
+      return res.status(200).json({ 
+        message: 'Nếu email tồn tại, mã xác nhận đã được gửi đến email của bạn' 
+      });
+    }
+
+    // Tạo mã xác nhận 6 chữ số
+    const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    // Hash mã xác nhận trước khi lưu vào database
+    const hashedCode = crypto
+      .createHash('sha256')
+      .update(resetCode)
+      .digest('hex');
+
+    // Lưu mã đã hash và thời gian hết hạn (10 phút)
+    customer.resetPasswordToken = hashedCode;
+    customer.resetPasswordExpires = Date.now() + 10 * 60 * 1000; // 10 phút
+
+    await customer.save();
+
+    // Gửi email với mã xác nhận
+    try {
+      await sendResetPasswordEmail(customer.email, resetCode);
+      console.log(`✅ Mã xác nhận đã được gửi đến: ${customer.email}`);
+    } catch (emailError) {
+      console.error('❌ Lỗi gửi email:', emailError);
+      // Xóa token nếu gửi email thất bại
+      customer.resetPasswordToken = undefined;
+      customer.resetPasswordExpires = undefined;
+      await customer.save();
+      
+      // Trả về thông báo lỗi chi tiết hơn
+      const errorMessage = emailError.message || 'Không thể gửi email. Vui lòng kiểm tra cấu hình email trong file .env';
+      return res.status(500).json({ 
+        message: errorMessage 
+      });
+    }
+
+    res.status(200).json({ 
+      message: 'Mã xác nhận đã được gửi đến email của bạn' 
+    });
+  } catch (error) {
+    console.error('❌ Lỗi forgotPassword:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Xác nhận mã và đặt lại mật khẩu
+// @route   POST /api/customers/reset-password
+// @access  Public
+const resetPassword = async (req, res) => {
+  try {
+    const { email, resetCode, newPassword } = req.body;
+
+    if (!email || !resetCode || !newPassword) {
+      return res.status(400).json({ 
+        message: 'Vui lòng nhập đầy đủ thông tin: email, mã xác nhận và mật khẩu mới' 
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ 
+        message: 'Mật khẩu phải có ít nhất 6 ký tự' 
+      });
+    }
+
+    // Hash mã xác nhận để so sánh
+    const hashedCode = crypto
+      .createHash('sha256')
+      .update(resetCode)
+      .digest('hex');
+
+    // Tìm customer với mã xác nhận hợp lệ và chưa hết hạn
+    const customer = await Customer.findOne({
+      email,
+      resetPasswordToken: hashedCode,
+      resetPasswordExpires: { $gt: Date.now() }, // Chưa hết hạn
+    });
+
+    if (!customer) {
+      return res.status(400).json({ 
+        message: 'Mã xác nhận không hợp lệ hoặc đã hết hạn' 
+      });
+    }
+
+    // Đặt lại mật khẩu
+    customer.password = newPassword;
+    customer.resetPasswordToken = undefined;
+    customer.resetPasswordExpires = undefined;
+
+    await customer.save();
+
+    console.log(`✅ Mật khẩu đã được đặt lại cho: ${customer.email}`);
+
+    res.status(200).json({ 
+      message: 'Mật khẩu đã được đặt lại thành công. Vui lòng đăng nhập lại.' 
+    });
+  } catch (error) {
+    console.error('❌ Lỗi resetPassword:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
 export{
     registerCustomer,
     loginCustomer,
@@ -293,4 +413,6 @@ export{
     updateUserProfile,
     updateCartItemQuantity,
     clearCart,
+    forgotPassword,
+    resetPassword,
 };

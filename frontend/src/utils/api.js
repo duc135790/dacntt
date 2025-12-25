@@ -62,6 +62,9 @@ export const authAPI = {
   register: (userData) => api.post('/customers', userData),
   getProfile: () => api.get('/customers/profile'),
   updateProfile: (userData) => api.put('/customers/profile', userData),
+  forgotPassword: (email) => api.post('/customers/forgot-password', { email }),
+  resetPassword: (email, resetCode, newPassword) => 
+    api.post('/customers/reset-password', { email, resetCode, newPassword }),
 };
 
 // Products API

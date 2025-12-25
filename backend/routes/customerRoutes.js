@@ -10,6 +10,8 @@ import{
     updateUserProfile,
     updateCartItemQuantity,
     clearCart,
+    forgotPassword,
+    resetPassword,
 }from '../controllers/customerController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
@@ -18,9 +20,13 @@ console.log('📋 Customer routes loading...');
 //cac routes cong khai (không cần đăng nhập)
 router.post('/', registerCustomer);
 router.post('/login', loginCustomer);
+router.post('/forgot-password', forgotPassword);
+router.post('/reset-password', resetPassword);
 
 console.log('  ✅ POST / (register) registered');
 console.log('  ✅ POST /login registered');
+console.log('  ✅ POST /forgot-password registered');
+console.log('  ✅ POST /reset-password registered');
 
 //cac routes rieng tu (cần đăng nhập)
 router.route('/cart')

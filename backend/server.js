@@ -37,13 +37,19 @@ if (!process.env.MONGO_URI) {
     console.warn('   Server will start but database features will not work.');
 }
 
-if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    console.warn('⚠️  WARNING: EMAIL_USER or EMAIL_PASS is not defined!');
+const emailUser = process.env.EMAIL_USER || process.env.EMAIL_USERNAME;
+const emailPass = process.env.EMAIL_PASSWORD || process.env.EMAIL_PASS;
+
+if (!emailUser || !emailPass) {
+    console.warn('⚠️  WARNING: EMAIL_USER and EMAIL_PASSWORD (or EMAIL_PASS) are not defined!');
     console.warn('   Email notifications will not work.');
+    console.warn('   Please add to .env file:');
+    console.warn('   EMAIL_USER=your-email@gmail.com');
+    console.warn('   EMAIL_PASSWORD=your-app-password');
 } else {
     console.log('✅ Email configuration loaded');
-    console.log('   📧 EMAIL_USER:', process.env.EMAIL_USER);
-    console.log('   🔑 EMAIL_PASS:', process.env.EMAIL_PASS ? '***' + process.env.EMAIL_PASS.slice(-4) : 'Not set');
+    console.log('   📧 EMAIL_USER:', emailUser);
+    console.log('   🔑 EMAIL_PASSWORD:', emailPass ? '***' + emailPass.slice(-4) : 'Not set');
 }
 
 // Import các routes
